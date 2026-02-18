@@ -157,7 +157,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --bg-primary: var(--zinc-950);
     --bg-secondary: var(--zinc-900);
     --bg-card: var(--zinc-800);
@@ -209,6 +209,59 @@
     --shadow-md: 0 4px 16px oklch(0 0 0 / 0.32);
     --shadow-lg: 0 16px 48px oklch(0 0 0 / 0.48);
   }
+}
+
+:root.dark {
+  --bg-primary: var(--zinc-950);
+  --bg-secondary: var(--zinc-900);
+  --bg-card: var(--zinc-800);
+  --bg-input: var(--zinc-800);
+
+  --text-primary: var(--zinc-50);
+  --text-secondary: var(--zinc-400);
+  --text-muted: var(--zinc-500);
+
+  --border: var(--zinc-700);
+  --border-focus: var(--indigo-400);
+
+  --accent: var(--indigo-400);
+  --accent-hover: var(--indigo-300);
+  --accent-subtle: var(--indigo-950);
+  --accent-text: var(--indigo-300);
+
+  --danger: var(--red-400);
+  --danger-hover: var(--red-300);
+
+  --success: var(--green-400);
+  --warning: var(--amber-400);
+
+  --tag-bg: var(--indigo-900);
+  --tag-text: var(--indigo-300);
+
+  --badge-global-bg: var(--blue-900);
+  --badge-global-text: var(--blue-300);
+  --badge-project-bg: var(--green-900);
+  --badge-project-text: var(--green-300);
+  --badge-file-bg: var(--amber-900);
+  --badge-file-text: var(--amber-300);
+  --badge-script-bg: var(--pink-900);
+  --badge-script-text: var(--pink-300);
+  --badge-snippet-bg: var(--indigo-900);
+  --badge-snippet-text: var(--indigo-300);
+  --badge-template-bg: var(--purple-900);
+  --badge-template-text: var(--purple-300);
+  --badge-reference-bg: var(--teal-900);
+  --badge-reference-text: var(--teal-300);
+  --badge-tool-bg: var(--red-900);
+  --badge-tool-text: var(--red-300);
+  --badge-read-only-bg: var(--sky-900);
+  --badge-read-only-text: var(--sky-300);
+  --badge-read-write-bg: var(--orange-900);
+  --badge-read-write-text: var(--orange-300);
+
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.24);
+  --shadow-md: 0 4px 16px oklch(0 0 0 / 0.32);
+  --shadow-lg: 0 16px 48px oklch(0 0 0 / 0.48);
 }
 
 *,
@@ -717,6 +770,52 @@ label {
   font-size: 13px;
 }
 
+/* Tool picker */
+.tool-picker {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.tool-group-header {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.tool-group-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.tool-option {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.tool-option input[type="checkbox"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.tool-option:hover {
+  color: var(--accent);
+}
+
 .bulk-checkbox {
   width: 14px;
   height: 14px;
@@ -775,6 +874,74 @@ label {
   border-bottom-color: var(--accent);
 }
 
+.two-col-layout {
+  display: flex;
+  gap: 16px;
+  min-height: 600px;
+}
+
+.two-col-left {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.two-col-left .card-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+}
+
+.two-col-right {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 0;
+  overflow-y: auto;
+  max-height: calc(100vh - 150px);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  z-index: 1;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.panel-header h2 {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.panel-body {
+  padding: 20px;
+}
+
+.panel-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.card.active {
+  border-color: var(--border-focus);
+  background: var(--accent-subtle);
+}
+
 @media (max-width: 640px) {
   .form-row {
     grid-template-columns: 1fr;
@@ -797,5 +964,21 @@ label {
 
   .stats-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .two-col-layout {
+    flex-direction: column;
+  }
+
+  .two-col-left {
+    width: 100%;
+  }
+
+  .two-col-left .card-list {
+    max-height: 400px;
+  }
+
+  .two-col-right {
+    max-height: none;
   }
 }

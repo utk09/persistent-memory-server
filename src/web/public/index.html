@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Persistent Memory Server</title>
   <link rel="stylesheet" href="/css/styles.css" />
+  <script>(function () { try { const s = JSON.parse(localStorage.getItem("persistent-memory-server") || "{}"); if (s.theme) document.documentElement.className = s.theme; } catch (e) { } }());</script>
 </head>
 
 <body>
@@ -16,6 +17,7 @@
       <a href="/memories.html">Memories</a>
       <a href="/snippets.html">Snippets</a>
       <a href="/agents.html">Agents</a>
+      <button id="theme-toggle" class="btn btn-sm" onclick="toggleTheme()" style="margin-left: auto">🌙</button>
     </nav>
 
     <div class="page-header">

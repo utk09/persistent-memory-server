@@ -11,6 +11,7 @@ export type Agent = {
   name: string;
   description: string;
   systemPrompt: string;
+  model?: string;
   tools: string[];
   permission: AgentPermission;
   permissionExpiresAt?: string;
@@ -23,6 +24,7 @@ type CreateAgentInput = {
   name: string;
   description: string;
   systemPrompt: string;
+  model?: string;
   tools?: string[];
   permission?: AgentPermission;
   permissionExpiresAt?: string;
@@ -33,6 +35,7 @@ type UpdateAgentInput = {
   name?: string;
   description?: string;
   systemPrompt?: string;
+  model?: string | null;
   tools?: string[];
   permission?: AgentPermission;
   permissionExpiresAt?: string | null;
@@ -115,6 +118,7 @@ export function createAgent(input: CreateAgentInput): Agent {
     updatedAt: now,
   };
 
+  if (input.model) agent.model = input.model;
   writeAgent(agent);
   logger.info("agent-store", `Created agent: ${agent.id} (${agent.name})`);
   return agent;
@@ -135,6 +139,11 @@ export function updateAgent(id: string, input: UpdateAgentInput): Agent | null {
   if (input.systemPrompt !== undefined) agent.systemPrompt = input.systemPrompt;
   if (input.tools !== undefined) agent.tools = input.tools;
   if (input.permission !== undefined) agent.permission = input.permission;
+  if (input.model === null) {
+    delete agent.model;
+  } else if (input.model !== undefined) {
+    agent.model = input.model;
+  }
   if (input.permissionExpiresAt === null) {
     delete agent.permissionExpiresAt;
   } else if (input.permissionExpiresAt !== undefined) {

@@ -9,13 +9,13 @@
     "node": "^20 || ^21 || ^22 || ^23 || ^24"
   },
   "scripts": {
-    "export:file": "tsx src/scripts/export.ts",
-    "import:file": "tsx src/scripts/import.ts",
-    "lint": "eslint ./",
+    "export:file": "jiti src/scripts/export.ts",
+    "import:file": "jiti src/scripts/import.ts",
+    "lint": "eslint ./ && tsc --noEmit",
     "lint:fix": "eslint ./ --fix",
-    "start:mcp": "tsx src/mcp/server.ts",
-    "start:web": "tsx src/web/server.ts",
-    "stats": "tsx src/scripts/stats.ts"
+    "start:mcp": "jiti src/mcp/server.ts",
+    "start:web": "jiti src/web/server.ts",
+    "stats": "jiti src/scripts/stats.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.26.0",

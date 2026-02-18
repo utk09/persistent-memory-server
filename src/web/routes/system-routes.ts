@@ -6,9 +6,205 @@ import { countAgents, deleteAgent, listAgents } from "../../core/agent-store.js"
 import { logger } from "../../core/logger.js";
 import { countMemories, deleteMemory, listMemories } from "../../core/memory-store.js";
 import { countSnippets, deleteSnippet, listSnippets } from "../../core/snippet-store.js";
+import { TOOL_CATALOG } from "../../core/tool-catalog.js";
 import { DATA_DIR } from "../../core/utils.js";
 
 const router = Router();
+
+// GET /api/ - list all API endpoints
+router.get("/", (_req, res) => {
+  res.json({
+    name: "persistent-memory-server",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/",
+        description: "List all API endpoints",
+        request: null,
+        response: "{ name, endpoints[] }",
+      },
+      {
+        method: "GET",
+        path: "/api/health",
+        description: "Server health check",
+        request: null,
+        response: "{ status, timestamp, uptime }",
+      },
+      {
+        method: "GET",
+        path: "/api/tools",
+        description: "List available MCP tools",
+        request: null,
+        response: "ToolEntry[] — { name, group, description }",
+      },
+      {
+        method: "GET",
+        path: "/api/stats",
+        description: "Dashboard statistics",
+        request: null,
+        response: "{ counts: { memories, snippets, agents }, recent[] }",
+      },
+      {
+        method: "POST",
+        path: "/api/export",
+        description: "Export all data as JSON",
+        request: null,
+        response: "{ memories[], snippets[], agents[], exportedAt }",
+      },
+      {
+        method: "POST",
+        path: "/api/import",
+        description: "Import data from JSON",
+        request: "{ memories?[], snippets?[], agents?[] }",
+        response: "{ success, imported }",
+      },
+      {
+        method: "POST",
+        path: "/api/bulk/delete",
+        description: "Bulk delete by IDs and resource type",
+        request: '{ type: "memory"|"snippet"|"agent", ids: string[] }',
+        response: "{ success, deleted }",
+      },
+      {
+        method: "POST",
+        path: "/api/bulk/tag",
+        description: "Bulk update tags",
+        request:
+          '{ type: "memory"|"snippet"|"agent", ids[], tags[], action: "add"|"remove"|"set" }',
+        response: "{ success, updated }",
+      },
+      {
+        method: "GET",
+        path: "/api/memories",
+        description: "List or search memories",
+        request: "query: ?scope &projectPath &filePath &tags &q &includeExpired",
+        response: "Memory[]",
+      },
+      {
+        method: "POST",
+        path: "/api/memories",
+        description: "Create a memory",
+        request: "{ title, content, scope, projectPath?, filePath?, tags?, expiresAt? }",
+        response: "Memory (201)",
+      },
+      {
+        method: "POST",
+        path: "/api/memories/recall",
+        description: "Get relevant memories for context",
+        request: "{ projectPath, filePath? }",
+        response: "Memory[]",
+      },
+      {
+        method: "GET",
+        path: "/api/memories/:id",
+        description: "Get a memory by ID",
+        request: "param: id",
+        response: "Memory",
+      },
+      {
+        method: "PUT",
+        path: "/api/memories/:id",
+        description: "Update a memory",
+        request: "param: id, body: { title?, content?, scope?, tags?, expiresAt? }",
+        response: "Memory",
+      },
+      {
+        method: "DELETE",
+        path: "/api/memories/:id",
+        description: "Delete a memory",
+        request: "param: id",
+        response: "{ success }",
+      },
+      {
+        method: "GET",
+        path: "/api/snippets",
+        description: "List or search snippets",
+        request: "query: ?type &tags &q",
+        response: "Snippet[]",
+      },
+      {
+        method: "POST",
+        path: "/api/snippets",
+        description: "Create a snippet",
+        request: "{ title, content, type, language?, tags? }",
+        response: "Snippet (201)",
+      },
+      {
+        method: "GET",
+        path: "/api/snippets/:id",
+        description: "Get a snippet by ID",
+        request: "param: id",
+        response: "Snippet",
+      },
+      {
+        method: "PUT",
+        path: "/api/snippets/:id",
+        description: "Update a snippet",
+        request: "param: id, body: { title?, content?, type?, language?, tags? }",
+        response: "Snippet",
+      },
+      {
+        method: "DELETE",
+        path: "/api/snippets/:id",
+        description: "Delete a snippet",
+        request: "param: id",
+        response: "{ success }",
+      },
+      {
+        method: "GET",
+        path: "/api/agents",
+        description: "List or search agents",
+        request: "query: ?tags &q",
+        response: "Agent[]",
+      },
+      {
+        method: "POST",
+        path: "/api/agents",
+        description: "Create an agent",
+        request:
+          "{ name, description, systemPrompt, model?, tools?, permission?, permissionExpiresAt?, tags? }",
+        response: "Agent (201)",
+      },
+      {
+        method: "GET",
+        path: "/api/agents/:id",
+        description: "Get an agent by ID",
+        request: "param: id",
+        response: "Agent",
+      },
+      {
+        method: "PUT",
+        path: "/api/agents/:id",
+        description: "Update an agent",
+        request:
+          "param: id, body: { name?, description?, systemPrompt?, model?, tools?, permission?, tags? }",
+        response: "Agent",
+      },
+      {
+        method: "DELETE",
+        path: "/api/agents/:id",
+        description: "Delete an agent",
+        request: "param: id",
+        response: "{ success }",
+      },
+    ],
+  });
+});
+
+// GET /api/health - server health check
+router.get("/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+
+// GET /api/tools - list available MCP tools
+router.get("/tools", (_req, res) => {
+  logger.info("web", "GET /api/tools");
+  res.json(TOOL_CATALOG);
+});
 
 // GET /api/stats - dashboard stats
 router.get("/stats", (_req, res) => {

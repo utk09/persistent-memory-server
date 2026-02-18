@@ -10,22 +10,25 @@ import {
   searchSnippets,
   updateSnippet,
 } from "../../core/snippet-store.js";
+import { getToolDescription } from "../../core/tool-catalog.js";
 
 const snippetTypeEnum = z.enum(["script", "snippet", "template", "reference", "tool"]);
 
 export function registerSnippetTools(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     "snippet_create",
-    "Create a new snippet (script, code snippet, template, reference, or tool definition)",
     {
-      title: z.string().describe("Title of the snippet"),
-      content: z.string().describe("Content of the snippet"),
-      type: snippetTypeEnum.describe("Type: script, snippet, template, reference, or tool"),
-      language: z
-        .string()
-        .optional()
-        .describe("Programming language (e.g. python, bash, markdown)"),
-      tags: z.array(z.string()).optional().describe("Tags for categorization"),
+      description: getToolDescription("snippet_create"),
+      inputSchema: {
+        title: z.string().describe("Title of the snippet"),
+        content: z.string().describe("Content of the snippet"),
+        type: snippetTypeEnum.describe("Type: script, snippet, template, reference, or tool"),
+        language: z
+          .string()
+          .optional()
+          .describe("Programming language (e.g. python, bash, markdown)"),
+        tags: z.array(z.string()).optional().describe("Tags for categorization"),
+      },
     },
     async (params) => {
       logger.info("mcp", `snippet_create: ${params.title}`);
@@ -36,11 +39,13 @@ export function registerSnippetTools(server: McpServer): void {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "snippet_read",
-    "Read a snippet by its ID",
     {
-      id: z.string().describe("Snippet ID"),
+      description: getToolDescription("snippet_read"),
+      inputSchema: {
+        id: z.string().describe("Snippet ID"),
+      },
     },
     async (params) => {
       logger.info("mcp", `snippet_read: ${params.id}`);
@@ -57,16 +62,18 @@ export function registerSnippetTools(server: McpServer): void {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "snippet_update",
-    "Update an existing snippet",
     {
-      id: z.string().describe("Snippet ID to update"),
-      title: z.string().optional().describe("New title"),
-      content: z.string().optional().describe("New content"),
-      type: snippetTypeEnum.optional().describe("New type"),
-      language: z.string().nullable().optional().describe("New language (null to remove)"),
-      tags: z.array(z.string()).optional().describe("New tags"),
+      description: getToolDescription("snippet_update"),
+      inputSchema: {
+        id: z.string().describe("Snippet ID to update"),
+        title: z.string().optional().describe("New title"),
+        content: z.string().optional().describe("New content"),
+        type: snippetTypeEnum.optional().describe("New type"),
+        language: z.string().nullable().optional().describe("New language (null to remove)"),
+        tags: z.array(z.string()).optional().describe("New tags"),
+      },
     },
     async (params) => {
       logger.info("mcp", `snippet_update: ${params.id}`);
@@ -84,11 +91,13 @@ export function registerSnippetTools(server: McpServer): void {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "snippet_delete",
-    "Delete a snippet by its ID",
     {
-      id: z.string().describe("Snippet ID to delete"),
+      description: getToolDescription("snippet_delete"),
+      inputSchema: {
+        id: z.string().describe("Snippet ID to delete"),
+      },
     },
     async (params) => {
       logger.info("mcp", `snippet_delete: ${params.id}`);
@@ -105,12 +114,14 @@ export function registerSnippetTools(server: McpServer): void {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "snippet_list",
-    "List all snippets, optionally filtered by type and/or tags",
     {
-      type: snippetTypeEnum.optional().describe("Filter by type"),
-      tags: z.array(z.string()).optional().describe("Filter by tags"),
+      description: getToolDescription("snippet_list"),
+      inputSchema: {
+        type: snippetTypeEnum.optional().describe("Filter by type"),
+        tags: z.array(z.string()).optional().describe("Filter by tags"),
+      },
     },
     async (params) => {
       logger.info("mcp", "snippet_list");
@@ -121,13 +132,15 @@ export function registerSnippetTools(server: McpServer): void {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "snippet_search",
-    "Search snippets by keyword (searches title and content)",
     {
-      query: z.string().describe("Search query"),
-      type: snippetTypeEnum.optional().describe("Filter by type"),
-      tags: z.array(z.string()).optional().describe("Filter by tags"),
+      description: getToolDescription("snippet_search"),
+      inputSchema: {
+        query: z.string().describe("Search query"),
+        type: snippetTypeEnum.optional().describe("Filter by type"),
+        tags: z.array(z.string()).optional().describe("Filter by tags"),
+      },
     },
     async (params) => {
       logger.info("mcp", `snippet_search: ${params.query}`);

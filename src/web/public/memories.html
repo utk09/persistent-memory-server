@@ -7,6 +7,7 @@
   <title>Memories - Memory Server</title>
   <link rel="stylesheet" href="/css/styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>(function () { try { const s = JSON.parse(localStorage.getItem("persistent-memory-server") || "{}"); if (s.theme) document.documentElement.className = s.theme; } catch (e) { } }());</script>
 </head>
 
 <body>
@@ -17,104 +18,45 @@
       <a href="/memories.html" class="active">Memories</a>
       <a href="/snippets.html">Snippets</a>
       <a href="/agents.html">Agents</a>
+      <button id="theme-toggle" class="btn btn-sm" onclick="toggleTheme()" style="margin-left: auto">🌙</button>
     </nav>
 
     <div class="page-header">
       <h1>Memories</h1>
-      <button class="btn btn-primary" onclick="openCreateModal()">+ New Memory</button>
+      <button class="btn btn-primary" onclick="openCreatePanel()">+ New Memory</button>
     </div>
 
-    <div class="tabs" id="scope-tabs">
-      <button class="tab active" data-scope="">All</button>
-      <button class="tab" data-scope="global">Global</button>
-      <button class="tab" data-scope="project">Project</button>
-      <button class="tab" data-scope="file">File</button>
-    </div>
-
-    <div class="toolbar">
-      <input type="search" aria-label="search-input" id="search-input" placeholder="Search memories..." />
-      <input type="text" aria-label="tag-filter" id="tag-filter" placeholder="Filter by tags (comma-separated)"
-        style="max-width: 250px" />
-    </div>
-
-    <div class="bulk-bar" id="bulk-bar">
-      <span class="bulk-count" id="bulk-count">0 selected</span>
-      <button class="btn btn-sm btn-danger" onclick="bulkDelete()">Delete Selected</button>
-    </div>
-
-    <div class="card-list" id="memory-list">
-      <div class="empty-state">
-        <p>Loading...</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Create/Edit Modal -->
-  <div class="modal-overlay" id="modal-overlay" style="display: none">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 id="modal-title">New Memory</h2>
-        <button class="modal-close" onclick="closeModal()">&times;</button>
-      </div>
-      <form id="memory-form" onsubmit="handleSubmit(event)">
-        <input type="hidden" id="form-id" />
-        <div class="form-group">
-          <label for="form-title">Title</label>
-          <input type="text" id="form-title" required />
+    <div class="two-col-layout">
+      <div class="two-col-left">
+        <div class="tabs" id="scope-tabs">
+          <button class="tab active" data-scope="">All</button>
+          <button class="tab" data-scope="global">Global</button>
+          <button class="tab" data-scope="project">Project</button>
+          <button class="tab" data-scope="file">File</button>
         </div>
-        <div class="form-group">
-          <label for="form-content">Content (Markdown supported)</label>
-          <textarea id="form-content" rows="6" required></textarea>
+
+        <div class="toolbar" style="margin-bottom: 8px">
+          <input type="search" aria-label="search-input" id="search-input" placeholder="Search memories..." />
+          <input type="text" aria-label="tag-filter" id="tag-filter" placeholder="Filter by tags"
+            style="max-width: 180px" />
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="form-scope">Scope</label>
-            <select id="form-scope" onchange="handleScopeChange()">
-              <option value="global">Global</option>
-              <option value="project">Project</option>
-              <option value="file">File</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="form-tags">Tags (comma-separated)</label>
-            <input type="text" id="form-tags" placeholder="e.g. style, config" />
+
+        <div class="bulk-bar" id="bulk-bar">
+          <span class="bulk-count" id="bulk-count">0 selected</span>
+          <button class="btn btn-sm btn-danger" onclick="bulkDelete()">Delete Selected</button>
+        </div>
+
+        <div class="card-list" id="memory-list">
+          <div class="empty-state">
+            <p>Loading...</p>
           </div>
         </div>
-        <div class="form-group" id="project-path-group" style="display: none">
-          <label for="form-project-path">Project Path</label>
-          <input type="text" id="form-project-path" placeholder="/absolute/path/to/project" />
-        </div>
-        <div class="form-group" id="file-path-group" style="display: none">
-          <label for="form-file-path">File Path (relative to project)</label>
-          <input type="text" id="form-file-path" placeholder="src/index.ts" />
-        </div>
-        <div class="form-group">
-          <label for="form-expires">Expires At (optional)</label>
-          <input type="datetime-local" id="form-expires" />
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn" onclick="closeModal()">Cancel</button>
-          <button type="button" class="btn btn-danger" id="delete-btn" style="display: none"
-            onclick="handleDelete()">Delete</button>
-          <button type="submit" class="btn btn-primary" id="submit-btn">Create</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- View Modal -->
-  <div class="modal-overlay" id="view-overlay" style="display: none">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 id="view-title"></h2>
-        <button class="modal-close" onclick="closeViewModal()">&times;</button>
       </div>
-      <div id="view-meta" class="card-meta" style="margin-bottom: 12px"></div>
-      <div id="view-content" class="markdown-content"></div>
-      <div id="view-tags" class="tags" style="margin-top: 12px"></div>
-      <div class="modal-actions">
-        <button class="btn" onclick="closeViewModal()">Close</button>
-        <button class="btn btn-primary" id="view-edit-btn">Edit</button>
+
+      <div class="two-col-right" id="detail-panel">
+        <div class="panel-empty">
+          <p>Select a memory or create a new one</p>
+        </div>
       </div>
     </div>
   </div>

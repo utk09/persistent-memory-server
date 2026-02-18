@@ -31,5 +31,7 @@ export function searchMatches(text: string, query: string): boolean {
 
 export function tagsMatch(entryTags: string[], filterTags: string[]): boolean {
   if (filterTags.length === 0) return true;
-  return filterTags.every((tag) => entryTags.includes(tag));
+  return filterTags.every((filter) =>
+    entryTags.some((tag) => tag.toLowerCase().includes(filter.toLowerCase())),
+  );
 }

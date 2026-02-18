@@ -11,27 +11,30 @@ import {
   searchMemories,
   updateMemory,
 } from "../../core/memory-store.js";
+import { getToolDescription } from "../../core/tool-catalog.js";
 
 const scopeEnum = z.enum(["global", "project", "file"]);
 
 export function registerMemoryTools(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     "memory_create",
-    "Create a new memory entry with title, content, scope (global/project/file), and optional tags",
     {
-      title: z.string().describe("Title of the memory"),
-      content: z.string().describe("Content of the memory (markdown supported)"),
-      scope: scopeEnum.describe("Memory scope: global, project, or file"),
-      projectPath: z
-        .string()
-        .optional()
-        .describe("Absolute project path (required for project/file scope)"),
-      filePath: z
-        .string()
-        .optional()
-        .describe("File path relative to projectPath (required for file scope)"),
-      tags: z.array(z.string()).optional().describe("Tags for categorization"),
-      expiresAt: z.string().optional().describe("Expiration date in ISO 8601 format"),
+      description: getToolDescription("memory_create"),
+      inputSchema: {
+        title: z.string().describe("Title of the memory"),
+        content: z.string().describe("Content of the memory (markdown supported)"),
+        scope: scopeEnum.describe("Memory scope: global, project, or file"),
+        projectPath: z
+          .string()
+          .optional()
+          .describe("Absolute project path (required for project/file scope)"),
+        filePath: z
+          .string()
+          .optional()
+          .describe("File path relative to projectPath (required for file scope)"),
+        tags: z.array(z.string()).optional().describe("Tags for categorization"),
+        expiresAt: z.string().optional().describe("Expiration date in ISO 8601 format"),
+      },
     },
     async (params) => {
       logger.info("mcp", `memory_create: ${params.title}`);
@@ -42,11 +45,13 @@ export function registerMemoryTools(server: McpServer): void {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "memory_read",
-    "Read a memory entry by its ID",
     {
-      id: z.string().describe("Memory ID"),
+      description: getToolDescription("memory_read"),
+      inputSchema: {
+        id: z.string().describe("Memory ID"),
+      },
     },
     async (params) => {
       logger.info("mcp", `memory_read: ${params.id}`);
@@ -63,18 +68,24 @@ export function registerMemoryTools(server: McpServer): void {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "memory_update",
-    "Update an existing memory entry (title, content, tags, scope, or expiration)",
     {
-      id: z.string().describe("Memory ID to update"),
-      title: z.string().optional().describe("New title"),
-      content: z.string().optional().describe("New content"),
-      scope: scopeEnum.optional().describe("New scope"),
-      projectPath: z.string().optional().describe("New project path"),
-      filePath: z.string().optional().describe("New file path"),
-      tags: z.array(z.string()).optional().describe("New tags"),
-      expiresAt: z.string().nullable().optional().describe("New expiration date (null to remove)"),
+      description: getToolDescription("memory_update"),
+      inputSchema: {
+        id: z.string().describe("Memory ID to update"),
+        title: z.string().optional().describe("New title"),
+        content: z.string().optional().describe("New content"),
+        scope: scopeEnum.optional().describe("New scope"),
+        projectPath: z.string().optional().describe("New project path"),
+        filePath: z.string().optional().describe("New file path"),
+        tags: z.array(z.string()).optional().describe("New tags"),
+        expiresAt: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("New expiration date (null to remove)"),
+      },
     },
     async (params) => {
       logger.info("mcp", `memory_update: ${params.id}`);
@@ -92,11 +103,13 @@ export function registerMemoryTools(server: McpServer): void {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "memory_delete",
-    "Delete a memory entry by its ID",
     {
-      id: z.string().describe("Memory ID to delete"),
+      description: getToolDescription("memory_delete"),
+      inputSchema: {
+        id: z.string().describe("Memory ID to delete"),
+      },
     },
     async (params) => {
       logger.info("mcp", `memory_delete: ${params.id}`);
@@ -113,15 +126,20 @@ export function registerMemoryTools(server: McpServer): void {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "memory_list",
-    "List memories, optionally filtered by scope, project, file, and/or tags",
     {
-      scope: scopeEnum.optional().describe("Filter by scope"),
-      projectPath: z.string().optional().describe("Filter by project path"),
-      filePath: z.string().optional().describe("Filter by file path"),
-      tags: z.array(z.string()).optional().describe("Filter by tags (all must match)"),
-      includeExpired: z.boolean().optional().describe("Include expired memories (default: false)"),
+      description: getToolDescription("memory_list"),
+      inputSchema: {
+        scope: scopeEnum.optional().describe("Filter by scope"),
+        projectPath: z.string().optional().describe("Filter by project path"),
+        filePath: z.string().optional().describe("Filter by file path"),
+        tags: z.array(z.string()).optional().describe("Filter by tags (all must match)"),
+        includeExpired: z
+          .boolean()
+          .optional()
+          .describe("Include expired memories (default: false)"),
+      },
     },
     async (params) => {
       logger.info("mcp", "memory_list");
@@ -132,15 +150,17 @@ export function registerMemoryTools(server: McpServer): void {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "memory_search",
-    "Search memories by keyword (searches title and content)",
     {
-      query: z.string().describe("Search query"),
-      scope: scopeEnum.optional().describe("Filter by scope"),
-      projectPath: z.string().optional().describe("Filter by project path"),
-      filePath: z.string().optional().describe("Filter by file path"),
-      tags: z.array(z.string()).optional().describe("Filter by tags"),
+      description: getToolDescription("memory_search"),
+      inputSchema: {
+        query: z.string().describe("Search query"),
+        scope: scopeEnum.optional().describe("Filter by scope"),
+        projectPath: z.string().optional().describe("Filter by project path"),
+        filePath: z.string().optional().describe("Filter by file path"),
+        tags: z.array(z.string()).optional().describe("Filter by tags"),
+      },
     },
     async (params) => {
       logger.info("mcp", `memory_search: ${params.query}`);
@@ -152,12 +172,56 @@ export function registerMemoryTools(server: McpServer): void {
     },
   );
 
-  server.tool(
-    "memory_recall",
-    "Get all relevant memories for the current context. Returns global + matching project + matching file memories, with file > project > global priority.",
+  server.registerTool(
+    "context_checkpoint",
     {
-      projectPath: z.string().describe("Current project path (absolute)"),
-      filePath: z.string().optional().describe("Current file path (relative to project)"),
+      description: getToolDescription("context_checkpoint"),
+      inputSchema: {
+        title: z.string().describe("Short descriptive title for the checkpoint"),
+        summary: z
+          .string()
+          .describe(
+            "Markdown summary of what was done, key decisions, current state, and what comes next",
+          ),
+        projectPath: z
+          .string()
+          .optional()
+          .describe("Absolute path to current project (omit for global scope)"),
+        tags: z
+          .array(z.string())
+          .optional()
+          .describe("Additional tags beyond the default 'checkpoint' and date tags"),
+      },
+    },
+    async (params) => {
+      logger.info("mcp", `context_checkpoint: ${params.title}`);
+      const today = new Date().toISOString().slice(0, 10);
+      const memory = createMemory({
+        title: params.title,
+        content: params.summary,
+        scope: params.projectPath ? "project" : "global",
+        projectPath: params.projectPath,
+        tags: ["checkpoint", today, ...(params.tags ?? [])],
+      });
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Checkpoint saved (${memory.id})\nTitle: ${memory.title}\nScope: ${memory.scope}`,
+          },
+        ],
+      };
+    },
+  );
+
+  server.registerTool(
+    "memory_recall",
+    {
+      description: getToolDescription("memory_recall"),
+      inputSchema: {
+        projectPath: z.string().describe("Current project path (absolute)"),
+        filePath: z.string().optional().describe("Current file path (relative to project)"),
+      },
     },
     async (params) => {
       logger.info(

@@ -10,7 +10,14 @@ A local server for managing persistent memories, reusable snippets, and agent co
 ## Setup
 
 ```bash
+git clone https://github.com/utk09/persistent-memory-server
+# or download zip and extract
+
+cd persistent-memory-server
+
 npm install
+
+pwd # Note the absolute path for MCP server setup
 ```
 
 ## Running
@@ -26,7 +33,10 @@ Opens at [http://localhost:3377](http://localhost:3377). Use `PORT=4000 npm run 
 ### MCP Server (for Claude Code)
 
 ```bash
-claude mcp add persistent-memory npx tsx /absolute/path/to/persistent-memory-server/src/mcp/server.ts
+claude mcp add persistent-memory -- npx jiti /absolute/path/to/persistent-memory-server/src/mcp/server.ts
+
+# replace /absolute/path/to/persistent-memory-server with the actual path from `pwd` above
+# best way to check is to run `npx jiti /absolute/path/to/persistent-memory-server/src/mcp/server.ts` directly in terminal - if it starts the server, the path is correct
 ```
 
 To remove:

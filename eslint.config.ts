@@ -41,6 +41,7 @@ export default defineConfig([
           checksVoidReturn: false,
         },
       ],
+      "no-var": "error",
       "no-console": ["warn", { allow: ["warn", "error", "debug", "info"] }],
       "@typescript-eslint/consistent-type-definitions": ["error", "type"],
       "@typescript-eslint/no-require-imports": "off",

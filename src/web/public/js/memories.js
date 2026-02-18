@@ -1,21 +1,32 @@
 let currentScope = "";
-let selectedIds = new Set();
+let currentMemoryId = null;
+let currentDetailMemory = null;
+let isDirty = false;
+let currentMemories = [];
+const selectedIds = new Set();
 
 // Scope tabs
-document.querySelectorAll("#scope-tabs .tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll("#scope-tabs .tab").forEach((t) => t.classList.remove("active"));
+document.querySelectorAll("#scope-tabs .tab").forEach(function (tab) {
+  tab.addEventListener("click", function () {
+    document.querySelectorAll("#scope-tabs .tab").forEach(function (t) {
+      t.classList.remove("active");
+    });
     tab.classList.add("active");
     currentScope = tab.dataset.scope;
     loadMemories();
   });
 });
 
-// Search with debounce
 const searchInput = document.getElementById("search-input");
 const tagFilter = document.getElementById("tag-filter");
+
 searchInput.addEventListener("input", debounce(loadMemories));
 tagFilter.addEventListener("input", debounce(loadMemories));
+
+function confirmLeave() {
+  if (!isDirty) return true;
+  return confirm("You have unsaved changes. Leave anyway?");
+}
 
 async function loadMemories() {
   const params = {};
@@ -24,14 +35,14 @@ async function loadMemories() {
   if (tagFilter.value.trim()) params.tags = tagFilter.value.trim();
 
   try {
-    const memories = await api.memories.list(params);
-    renderMemories(memories);
+    currentMemories = await api.memories.list(params);
+    renderList(currentMemories);
   } catch (err) {
     console.error("Failed to load memories:", err);
   }
 }
 
-function renderMemories(memories) {
+function renderList(memories) {
   const list = document.getElementById("memory-list");
   selectedIds.clear();
   updateBulkBar();
@@ -44,20 +55,19 @@ function renderMemories(memories) {
   list.innerHTML = memories
     .map(
       (m) => `
-    <div class="card" style="display: flex; gap: 12px; align-items: flex-start">
-      <input type="checkbox" class="bulk-checkbox" data-id="${m.id}" onchange="toggleSelect('${m.id}', this.checked)" onclick="event.stopPropagation()" />
-      <div style="flex: 1" onclick="viewMemory('${m.id}')">
+    <div class="card ${m.id === currentMemoryId ? "active" : ""}" style="display:flex;gap:10px;align-items:flex-start">
+      <input type="checkbox" class="bulk-checkbox" data-id="${m.id}" onchange="toggleSelect('${m.id}',this.checked)" onclick="event.stopPropagation()" />
+      <div style="flex:1;cursor:pointer" onclick="navigateMemory('${m.id}')">
         <div class="card-header">
           <span class="card-title">${escapeHtml(m.title)}</span>
           <span class="badge badge-${m.scope}">${m.scope}</span>
         </div>
         ${m.projectPath ? `<div class="card-meta">${escapeHtml(m.projectPath)}${m.filePath ? ` / ${escapeHtml(m.filePath)}` : ""}</div>` : ""}
         <div class="card-content">${escapeHtml(truncate(m.content))}</div>
-        <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
           <div class="tags">${renderTags(m.tags)}</div>
           ${isExpiringSoon(m.expiresAt) ? `<span class="expiry-warning">Expires ${formatDate(m.expiresAt)}</span>` : ""}
         </div>
-        <div class="card-meta" style="margin-top: 4px">${formatDate(m.updatedAt)}</div>
       </div>
     </div>
   `,
@@ -66,11 +76,8 @@ function renderMemories(memories) {
 }
 
 function toggleSelect(id, checked) {
-  if (checked) {
-    selectedIds.add(id);
-  } else {
-    selectedIds.delete(id);
-  }
+  if (checked) selectedIds.add(id);
+  else selectedIds.delete(id);
   updateBulkBar();
 }
 
@@ -89,6 +96,11 @@ async function bulkDelete() {
   if (!confirm(`Delete ${selectedIds.size} memories?`)) return;
   try {
     await api.bulkDelete("memory", [...selectedIds]);
+    if (selectedIds.has(currentMemoryId)) {
+      currentMemoryId = null;
+      currentDetailMemory = null;
+      showEmptyPanel();
+    }
     selectedIds.clear();
     await loadMemories();
   } catch (err) {
@@ -96,127 +108,231 @@ async function bulkDelete() {
   }
 }
 
-async function viewMemory(id) {
+async function navigateMemory(id) {
+  if (id === currentMemoryId) return;
+  if (!confirmLeave()) return;
   try {
     const m = await api.memories.get(id);
-    document.getElementById("view-title").textContent = m.title;
-    document.getElementById("view-meta").innerHTML = `
-      <span class="badge badge-${m.scope}">${m.scope}</span>
-      ${m.projectPath ? ` &middot; ${escapeHtml(m.projectPath)}` : ""}
-      ${m.filePath ? ` / ${escapeHtml(m.filePath)}` : ""}
-      &middot; ${formatDate(m.updatedAt)}
-      ${m.expiresAt ? ` &middot; Expires: ${formatDate(m.expiresAt)}` : ""}
-    `;
-    document.getElementById("view-content").innerHTML = marked.parse(m.content);
-    document.getElementById("view-tags").innerHTML = renderTags(m.tags);
-    document.getElementById("view-edit-btn").onclick = () => {
-      closeViewModal();
-      openEditModal(m);
-    };
-    document.getElementById("view-overlay").style.display = "flex";
+    currentMemoryId = id;
+    currentDetailMemory = m;
+    isDirty = false;
+    renderList(currentMemories);
+    showDetailPanel(m);
   } catch (err) {
     alert("Failed to load memory: " + err.message);
   }
 }
 
-function closeViewModal() {
-  document.getElementById("view-overlay").style.display = "none";
+function showEmptyPanel() {
+  document.getElementById("detail-panel").innerHTML = `
+    <div class="panel-empty"><p>Select a memory or create a new one</p></div>
+  `;
 }
 
-function openCreateModal() {
-  document.getElementById("modal-title").textContent = "New Memory";
-  document.getElementById("submit-btn").textContent = "Create";
-  document.getElementById("delete-btn").style.display = "none";
-  document.getElementById("form-id").value = "";
-  document.getElementById("memory-form").reset();
-  document.getElementById("form-scope").value = "global";
-  handleScopeChange();
-  document.getElementById("modal-overlay").style.display = "flex";
+function showDetailPanel(m) {
+  currentDetailMemory = m;
+  const panel = document.getElementById("detail-panel");
+  panel.innerHTML = `
+    <div class="panel-header">
+      <h2 style="min-width:0;word-break:break-word">${escapeHtml(m.title)}</h2>
+      <button class="btn btn-primary" style="flex-shrink:0" onclick="openEditPanel()">Edit</button>
+    </div>
+    <div class="panel-body">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <span class="badge badge-${m.scope}">${m.scope}</span>
+        ${m.projectPath ? `<span class="card-meta">${escapeHtml(m.projectPath)}${m.filePath ? ` / ${escapeHtml(m.filePath)}` : ""}</span>` : ""}
+        <span class="card-meta">${formatDate(m.updatedAt)}</span>
+        ${m.expiresAt ? `<span class="expiry-warning">Expires ${formatDate(m.expiresAt)}</span>` : ""}
+      </div>
+      <div class="markdown-content">${marked.parse(m.content)}</div>
+      ${m.tags && m.tags.length > 0 ? `<div class="tags" style="margin-top:12px">${renderTags(m.tags)}</div>` : ""}
+    </div>
+  `;
 }
 
-function openEditModal(m) {
-  document.getElementById("modal-title").textContent = "Edit Memory";
-  document.getElementById("submit-btn").textContent = "Save";
-  document.getElementById("delete-btn").style.display = "inline-flex";
-  document.getElementById("form-id").value = m.id;
-  document.getElementById("form-title").value = m.title;
-  document.getElementById("form-content").value = m.content;
-  document.getElementById("form-scope").value = m.scope;
-  document.getElementById("form-tags").value = m.tags.join(", ");
-  document.getElementById("form-project-path").value = m.projectPath || "";
-  document.getElementById("form-file-path").value = m.filePath || "";
-  if (m.expiresAt) {
-    document.getElementById("form-expires").value = m.expiresAt.slice(0, 16);
+function showFormPanel(memory) {
+  const isEdit = !!memory;
+  isDirty = false;
+  const panel = document.getElementById("detail-panel");
+  panel.innerHTML = `
+    <div class="panel-header">
+      <h2>${isEdit ? "Edit Memory" : "New Memory"}</h2>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn" onclick="handleFormCancel()">Cancel</button>
+        ${isEdit ? `<button class="btn btn-danger" onclick="handleDelete()">Delete</button>` : ""}
+        <button class="btn btn-primary" onclick="handleFormSubmit()">${isEdit ? "Save" : "Create"}</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <input type="hidden" id="form-id" />
+      <div class="form-group">
+        <label for="form-title">Title</label>
+        <input type="text" id="form-title" required />
+      </div>
+      <div class="form-group">
+        <label for="form-content">Content (Markdown supported)</label>
+        <textarea id="form-content" rows="8" required></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="form-scope">Scope</label>
+          <select id="form-scope" onchange="handleScopeChange()">
+            <option value="global">Global</option>
+            <option value="project">Project</option>
+            <option value="file">File</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="form-tags">Tags (comma-separated)</label>
+          <input type="text" id="form-tags" placeholder="e.g. style, config" />
+        </div>
+      </div>
+      <div class="form-group" id="project-path-group" style="display:none">
+        <label for="form-project-path">Project Path</label>
+        <input type="text" id="form-project-path" placeholder="/absolute/path/to/project" />
+      </div>
+      <div class="form-group" id="file-path-group" style="display:none">
+        <label for="form-file-path">File Path (relative to project)</label>
+        <input type="text" id="form-file-path" placeholder="src/index.ts" />
+      </div>
+      <div class="form-group">
+        <label for="form-expires">Expires At (optional)</label>
+        <input type="datetime-local" id="form-expires" />
+      </div>
+    </div>
+  `;
+
+  if (isEdit) {
+    document.getElementById("form-id").value = memory.id;
+    document.getElementById("form-title").value = memory.title;
+    document.getElementById("form-content").value = memory.content;
+    document.getElementById("form-scope").value = memory.scope;
+    document.getElementById("form-tags").value = memory.tags.join(", ");
+    document.getElementById("form-project-path").value = memory.projectPath || "";
+    document.getElementById("form-file-path").value = memory.filePath || "";
+    if (memory.expiresAt) {
+      document.getElementById("form-expires").value = memory.expiresAt.slice(0, 16);
+    }
+  } else {
+    document.getElementById("form-scope").value = currentScope || "global";
   }
-  handleScopeChange();
-  document.getElementById("modal-overlay").style.display = "flex";
-}
 
-function closeModal() {
-  document.getElementById("modal-overlay").style.display = "none";
+  handleScopeChange();
+
+  panel.querySelectorAll("input, textarea, select").forEach(function (el) {
+    el.addEventListener("input", function () {
+      isDirty = true;
+    });
+    el.addEventListener("change", function () {
+      isDirty = true;
+    });
+  });
 }
 
 function handleScopeChange() {
   const scope = document.getElementById("form-scope").value;
-  document.getElementById("project-path-group").style.display =
-    scope === "project" || scope === "file" ? "block" : "none";
-  document.getElementById("file-path-group").style.display = scope === "file" ? "block" : "none";
+  const ppg = document.getElementById("project-path-group");
+  const fpg = document.getElementById("file-path-group");
+  if (ppg) ppg.style.display = scope === "project" || scope === "file" ? "block" : "none";
+  if (fpg) fpg.style.display = scope === "file" ? "block" : "none";
 }
 
-async function handleSubmit(event) {
-  event.preventDefault();
+function openEditPanel() {
+  showFormPanel(currentDetailMemory);
+}
+
+function openCreatePanel() {
+  if (!confirmLeave()) return;
+  isDirty = false;
+  currentMemoryId = null;
+  currentDetailMemory = null;
+  renderList(currentMemories);
+  showFormPanel(null);
+}
+
+function handleFormCancel() {
+  if (!confirmLeave()) return;
+  isDirty = false;
+  if (currentDetailMemory) {
+    showDetailPanel(currentDetailMemory);
+  } else {
+    showEmptyPanel();
+  }
+}
+
+async function handleFormSubmit() {
+  const titleEl = document.getElementById("form-title");
+  const contentEl = document.getElementById("form-content");
+
+  if (!titleEl.value.trim() || !contentEl.value.trim()) {
+    alert("Title and content are required.");
+    return;
+  }
+
   const id = document.getElementById("form-id").value;
   const tags = document
     .getElementById("form-tags")
     .value.split(",")
-    .map((t) => t.trim())
+    .map(function (t) {
+      return t.trim();
+    })
     .filter(Boolean);
-
   const expiresInput = document.getElementById("form-expires").value;
+
   const data = {
-    title: document.getElementById("form-title").value,
-    content: document.getElementById("form-content").value,
+    title: titleEl.value.trim(),
+    content: contentEl.value,
     scope: document.getElementById("form-scope").value,
-    tags,
+    tags: tags,
     projectPath: document.getElementById("form-project-path").value || undefined,
     filePath: document.getElementById("form-file-path").value || undefined,
     expiresAt: expiresInput ? new Date(expiresInput).toISOString() : undefined,
   };
 
   try {
+    let saved;
     if (id) {
-      await api.memories.update(id, data);
+      saved = await api.memories.update(id, data);
     } else {
-      await api.memories.create(data);
+      saved = await api.memories.create(data);
     }
-    closeModal();
+    isDirty = false;
+    currentMemoryId = saved.id;
+    currentDetailMemory = saved;
     await loadMemories();
+    showDetailPanel(saved);
   } catch (err) {
     alert("Failed to save memory: " + err.message);
   }
 }
 
 async function handleDelete() {
-  const id = document.getElementById("form-id").value;
-  if (!id || !confirm("Delete this memory?")) return;
+  if (!currentDetailMemory || !confirm("Delete this memory?")) return;
   try {
-    await api.memories.delete(id);
-    closeModal();
+    await api.memories.delete(currentDetailMemory.id);
+    isDirty = false;
+    currentMemoryId = null;
+    currentDetailMemory = null;
     await loadMemories();
+    showEmptyPanel();
   } catch (err) {
     alert("Failed to delete memory: " + err.message);
   }
 }
 
-// Setup modal close on overlay click
-setupModalClose("modal-overlay", closeModal);
-setupModalClose("view-overlay", closeViewModal);
-
-// Handle ?edit=ID in URL
 const urlParams = new URLSearchParams(window.location.search);
 const editId = urlParams.get("edit");
 if (editId) {
-  api.memories.get(editId).then(openEditModal).catch(console.error);
+  api.memories
+    .get(editId)
+    .then(function (m) {
+      currentMemoryId = m.id;
+      currentDetailMemory = m;
+      showFormPanel(m);
+    })
+    .catch(console.error);
 }
 
-loadMemories();
+loadMemories().then(function () {
+  if (!editId) showEmptyPanel();
+});

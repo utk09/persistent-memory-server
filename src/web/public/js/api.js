@@ -75,6 +75,7 @@ const api = {
   },
 
   // System
+  tools: () => apiRequest("/tools"),
   stats: () => apiRequest("/stats"),
   exportData: () => apiRequest("/export", { method: "POST" }),
   importData: (data) => apiRequest("/import", { method: "POST", body: data }),
@@ -137,3 +138,49 @@ function debounce(fn, delay = 300) {
     timer = setTimeout(() => fn(...args), delay);
   };
 }
+
+// Theme helpers
+const LS_KEY = "persistent-memory-server";
+
+function getLocalStorage() {
+  try {
+    return JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function setLocalStorage(data) {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+  } catch {
+    console.warn("Failed to save to localStorage");
+  }
+}
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const isDark =
+    root.classList.contains("dark") ||
+    (!root.classList.contains("light") &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const next = isDark ? "light" : "dark";
+  root.className = next;
+  const stored = getLocalStorage();
+  stored.theme = next;
+  setLocalStorage(stored);
+  updateThemeButton();
+}
+
+function updateThemeButton() {
+  const btn = document.getElementById("theme-toggle");
+  if (!btn) return;
+  const root = document.documentElement;
+  const isDark =
+    root.classList.contains("dark") ||
+    (!root.classList.contains("light") &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
+  btn.textContent = isDark ? "☀" : "🌙";
+}
+
+updateThemeButton();
