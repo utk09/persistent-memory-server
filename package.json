@@ -1,0 +1,45 @@
+{
+  "name": "persistent-memory-server",
+  "version": "1.0.0",
+  "description": "Heirarchial memory storage MCP server for claude code",
+  "license": "AGPL-3.0-only",
+  "author": "utk09",
+  "type": "module",
+  "engines": {
+    "node": "^20 || ^21 || ^22 || ^23 || ^24"
+  },
+  "scripts": {
+    "export:file": "tsx src/scripts/export.ts",
+    "import:file": "tsx src/scripts/import.ts",
+    "lint": "eslint ./",
+    "lint:fix": "eslint ./ --fix",
+    "start:mcp": "tsx src/mcp/server.ts",
+    "start:web": "tsx src/web/server.ts",
+    "stats": "tsx src/scripts/stats.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.26.0",
+    "cors": "2.8.6",
+    "express": "5.2.1",
+    "uuid": "13.0.0",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.6",
+    "@types/node": "25.2.3",
+    "eslint": "10.0.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-jsonc": "2.21.1",
+    "eslint-plugin-prettier": "5.5.5",
+    "eslint-plugin-simple-import-sort": "12.1.1",
+    "globals": "17.3.0",
+    "jiti": "2.6.1",
+    "nodemon": "3.1.11",
+    "prettier": "3.8.1",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.56.0"
+  }
+}

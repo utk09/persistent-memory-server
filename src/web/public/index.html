@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Persistent Memory Server</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+
+<body>
+  <div class="app">
+    <nav>
+      <a href="/" class="logo">Memory Server</a>
+      <a href="/" class="active">Dashboard</a>
+      <a href="/memories.html">Memories</a>
+      <a href="/snippets.html">Snippets</a>
+      <a href="/agents.html">Agents</a>
+    </nav>
+
+    <div class="page-header">
+      <h1>Dashboard</h1>
+      <div>
+        <button class="btn" onclick="handleExport()">Export All</button>
+        <label class="btn" style="cursor: pointer">
+          Import
+          <input type="file" aria-label="import" accept=".json" style="display: none" onchange="handleImport(event)" />
+        </label>
+      </div>
+    </div>
+
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number" id="stat-memories">-</div>
+        <div class="stat-label">Memories</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-snippets">-</div>
+        <div class="stat-label">Snippets</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-agents">-</div>
+        <div class="stat-label">Agents</div>
+      </div>
+    </div>
+
+    <h2 style="margin-bottom: 16px">Recent Activity</h2>
+    <div class="card-list" id="recent-list">
+      <div class="empty-state">
+        <p>Loading...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+
+</html>

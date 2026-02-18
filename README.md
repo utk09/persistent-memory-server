@@ -1,0 +1,108 @@
+# Persistent Memory Server
+
+A local server for managing persistent memories, reusable snippets, and agent configurations for AI coding assistants like Claude Code. Provides a web UI and an MCP interface for seamless integration
+
+## Prerequisites
+
+- Node.js 20+
+- npm
+
+## Setup
+
+```bash
+npm install
+```
+
+## Running
+
+### Web UI
+
+```bash
+npm run start:web
+```
+
+Opens at [http://localhost:3377](http://localhost:3377). Use `PORT=4000 npm run start:web` to change the port.
+
+### MCP Server (for Claude Code)
+
+```bash
+claude mcp add persistent-memory npx tsx /absolute/path/to/persistent-memory-server/src/mcp/server.ts
+```
+
+To remove:
+
+```bash
+claude mcp remove persistent-memory
+```
+
+Then restart Claude Code. The MCP tools will be available automatically.
+
+## What You Can Do
+
+### Memories
+
+Persistent notes organized by scope:
+
+- **Global** - coding preferences, universal rules (e.g. "always use single quotes")
+- **Project** - project-specific conventions (e.g. "this repo uses Tailwind")
+- **File** - instructions for specific files (e.g. "don't refactor the legacy parser here")
+
+Supports tags, markdown content, and optional expiration dates. Monorepos work naturally - project memories match by path prefix.
+
+### Snippets
+
+Reusable code and text, categorized by type:
+
+- `script` - executable scripts
+- `snippet` - code fragments
+- `template` - reusable templates
+- `reference` - documentation/notes
+- `tool` - tool definitions
+
+Each snippet can have a language tag (e.g. `python`, `bash`) for syntax highlighting.
+
+### Agents
+
+Stored agent configurations with:
+
+- System prompt
+- Allowed tools list
+- Permission model (read-only by default, read-write with optional expiry)
+
+## MCP Tools Reference
+
+| Tool | Description |
+| ------ | ------------- |
+| `memory_create` | Create a memory with scope, tags, and optional expiry |
+| `memory_read` | Get a memory by ID |
+| `memory_update` | Update a memory |
+| `memory_delete` | Delete a memory |
+| `memory_list` | List/filter memories by scope, project, tags |
+| `memory_search` | Search memories by keyword |
+| `memory_recall` | Get all relevant memories for current context (global + project + file) |
+| `snippet_create` | Create a snippet |
+| `snippet_read` | Get a snippet by ID |
+| `snippet_update` | Update a snippet |
+| `snippet_delete` | Delete a snippet |
+| `snippet_list` | List/filter snippets by type and tags |
+| `snippet_search` | Search snippets by keyword |
+| `agent_create` | Create an agent config |
+| `agent_read` | Get an agent by ID |
+| `agent_update` | Update an agent |
+| `agent_delete` | Delete an agent |
+| `agent_list` | List/filter agents by tags |
+| `agent_search` | Search agents by keyword |
+
+## Other Scripts
+
+```bash
+npm run export:file   # Export all data to JSON
+npm run import:file   # Import data from JSON
+npm run stats         # Print usage stats
+npm run lint          # Run linter
+npm run lint:fix      # Auto-fix lint issues
+```
+
+## Data Storage
+
+All data is stored as JSON files in the `data/` directory. Logs go to `logs/` with daily rotation (30-day retention). Neither is git-tracked.
