@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 
+import { logger } from "../core/logger.js";
 import { DATA_DIR } from "../core/utils.js";
 
 type Item = Record<string, unknown>;
@@ -51,9 +52,9 @@ function topTags(items: Item[], limit = 10): [string, number][] {
 function printTable(label: string, counts: Record<string, number>) {
   const entries = Object.entries(counts);
   if (entries.length === 0) return;
-  console.info(`\n${label}:`);
+  logger.info("stats", `\n${label}:`);
   for (const [k, v] of entries) {
-    console.info(`  ${k.padEnd(16)} ${v}`);
+    logger.info("stats", `  ${k.padEnd(16)} ${v}`);
   }
 }
 
@@ -62,10 +63,10 @@ function main() {
   const snippets = loadAll("snippets");
   const agents = loadAll("agents");
 
-  console.info("=== Persistent Memory Server Stats ===\n");
-  console.info(`Memories : ${memories.length}`);
-  console.info(`Snippets : ${snippets.length}`);
-  console.info(`Agents   : ${agents.length}`);
+  logger.info("stats", "=== Persistent Memory Server Stats ===");
+  logger.info("stats", `Memories : ${memories.length}`);
+  logger.info("stats", `Snippets : ${snippets.length}`);
+  logger.info("stats", `Agents   : ${agents.length}`);
 
   printTable("Memories by scope", countBy(memories, "scope"));
   printTable("Snippets by type", countBy(snippets, "type"));
@@ -73,9 +74,9 @@ function main() {
 
   const tags = topTags([...memories, ...snippets, ...agents]);
   if (tags.length > 0) {
-    console.info("\nTop tags:");
+    logger.info("stats", "\nTop tags:");
     for (const [tag, count] of tags) {
-      console.info(`  ${tag.padEnd(20)} ${count}`);
+      logger.info("stats", `  ${tag.padEnd(20)} ${count}`);
     }
   }
 }

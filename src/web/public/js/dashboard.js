@@ -27,16 +27,18 @@ async function loadDashboard() {
       )
       .join("");
   } catch (err) {
-    console.error("Failed to load dashboard:", err);
+    clientLog.error("dashboard", "Failed to load dashboard: " + err.message);
   }
 }
 
 function navigateTo(type, id) {
+  clientLog.info("dashboard", "Navigate to " + type + " " + id);
   const pages = { memory: "memories", snippet: "snippets", agent: "agents" };
-  window.location.href = `/${pages[type]}.html?edit=${id}`;
+  window.location.href = `/${pages[type]}.html?view=${id}`;
 }
 
 async function handleExport() {
+  clientLog.info("dashboard", "Export initiated");
   try {
     const data = await api.exportData();
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -47,7 +49,7 @@ async function handleExport() {
     a.click();
     URL.revokeObjectURL(url);
   } catch (err) {
-    console.error("Export failed:", err);
+    clientLog.error("dashboard", "Export failed: " + err.message);
     alert("Export failed: " + err.message);
   }
 }
@@ -55,6 +57,7 @@ async function handleExport() {
 async function handleImport(event) {
   const file = event.target.files[0];
   if (!file) return;
+  clientLog.info("dashboard", "Import initiated: " + file.name);
 
   try {
     const text = await file.text();
@@ -63,7 +66,7 @@ async function handleImport(event) {
     alert(`Imported ${result.imported} entries successfully.`);
     await loadDashboard();
   } catch (err) {
-    console.error("Import failed:", err);
+    clientLog.error("dashboard", "Import failed: " + err.message);
     alert("Import failed: " + err.message);
   }
 

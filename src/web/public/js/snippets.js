@@ -27,7 +27,7 @@ async function loadSnippets() {
     currentSnippets = await api.snippets.list(params);
     renderList(currentSnippets);
   } catch (err) {
-    console.error("Failed to load snippets:", err);
+    clientLog.error("snippets", "Failed to load snippets: " + err.message);
   }
 }
 
@@ -82,6 +82,7 @@ function updateBulkBar() {
 
 async function bulkDelete() {
   if (!confirm(`Delete ${selectedIds.size} snippets?`)) return;
+  clientLog.info("snippets", "Bulk delete " + selectedIds.size + " snippets");
   try {
     await api.bulkDelete("snippet", [...selectedIds]);
     if (selectedIds.has(currentSnippetId)) {
@@ -99,6 +100,7 @@ async function bulkDelete() {
 async function navigateSnippet(id) {
   if (id === currentSnippetId) return;
   if (!confirmLeave()) return;
+  clientLog.info("snippets", "View snippet " + id);
   try {
     const s = await api.snippets.get(id);
     currentSnippetId = id;
@@ -211,11 +213,16 @@ function showFormPanel(snippet) {
 }
 
 function openEditPanel() {
+  clientLog.info(
+    "snippets",
+    "Edit snippet " + (currentDetailSnippet ? currentDetailSnippet.id : ""),
+  );
   showFormPanel(currentDetailSnippet);
 }
 
 function openCreatePanel() {
   if (!confirmLeave()) return;
+  clientLog.info("snippets", "Open create snippet form");
   isDirty = false;
   currentSnippetId = null;
   currentDetailSnippet = null;
@@ -234,6 +241,7 @@ function handleFormCancel() {
 }
 
 async function handleFormSubmit() {
+  clientLog.info("snippets", "Submit snippet form");
   const titleEl = document.getElementById("form-title");
   const contentEl = document.getElementById("form-content");
 
@@ -278,6 +286,7 @@ async function handleFormSubmit() {
 
 async function handleDelete() {
   if (!currentDetailSnippet || !confirm("Delete this snippet?")) return;
+  clientLog.info("snippets", "Delete snippet " + currentDetailSnippet.id);
   try {
     await api.snippets.delete(currentDetailSnippet.id);
     isDirty = false;
@@ -291,18 +300,26 @@ async function handleDelete() {
 }
 
 const urlParams = new URLSearchParams(window.location.search);
+const viewId = urlParams.get("view");
 const editId = urlParams.get("edit");
-if (editId) {
+const openId = viewId || editId;
+if (openId) {
   api.snippets
-    .get(editId)
+    .get(openId)
     .then(function (s) {
       currentSnippetId = s.id;
       currentDetailSnippet = s;
-      showFormPanel(s);
+      if (editId) {
+        showFormPanel(s);
+      } else {
+        showDetailPanel(s);
+      }
     })
-    .catch(console.error);
+    .catch(function (err) {
+      clientLog.error("snippets", "Failed to load snippet: " + err.message);
+    });
 }
 
 loadSnippets().then(function () {
-  if (!editId) showEmptyPanel();
+  if (!openId) showEmptyPanel();
 });

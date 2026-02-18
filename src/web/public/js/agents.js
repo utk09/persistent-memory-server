@@ -24,7 +24,7 @@ async function loadAgents() {
     currentAgents = await api.agents.list(params);
     renderList(currentAgents);
   } catch (err) {
-    console.error("Failed to load agents:", err);
+    clientLog.error("agents", "Failed to load agents: " + err.message);
   }
 }
 
@@ -76,6 +76,7 @@ function updateBulkBar() {
 
 async function bulkDelete() {
   if (!confirm(`Delete ${selectedIds.size} agents?`)) return;
+  clientLog.info("agents", "Bulk delete " + selectedIds.size + " agents");
   try {
     await api.bulkDelete("agent", [...selectedIds]);
     if (selectedIds.has(currentAgentId)) {
@@ -93,6 +94,7 @@ async function bulkDelete() {
 async function navigateAgent(id) {
   if (id === currentAgentId) return;
   if (!confirmLeave()) return;
+  clientLog.info("agents", "View agent " + id);
   try {
     const a = await api.agents.get(id);
     currentAgentId = id;
@@ -274,16 +276,18 @@ async function loadToolPicker(selectedTools) {
     });
   } catch (err) {
     picker.innerHTML = '<span class="card-meta">Failed to load tools</span>';
-    console.error("Failed to load tools:", err);
+    clientLog.error("agents", "Failed to load tools: " + err.message);
   }
 }
 
 function openEditPanel() {
+  clientLog.info("agents", "Edit agent " + (currentDetailAgent ? currentDetailAgent.id : ""));
   showFormPanel(currentDetailAgent);
 }
 
 function openCreatePanel() {
   if (!confirmLeave()) return;
+  clientLog.info("agents", "Open create agent form");
   isDirty = false;
   currentAgentId = null;
   currentDetailAgent = null;
@@ -302,6 +306,7 @@ function handleFormCancel() {
 }
 
 async function handleFormSubmit() {
+  clientLog.info("agents", "Submit agent form");
   const nameEl = document.getElementById("form-name");
   const descEl = document.getElementById("form-description");
   const promptEl = document.getElementById("form-system-prompt");
@@ -357,6 +362,7 @@ async function handleFormSubmit() {
 
 async function handleDelete() {
   if (!currentDetailAgent || !confirm("Delete this agent?")) return;
+  clientLog.info("agents", "Delete agent " + currentDetailAgent.id);
   try {
     await api.agents.delete(currentDetailAgent.id);
     isDirty = false;
@@ -370,18 +376,26 @@ async function handleDelete() {
 }
 
 const urlParams = new URLSearchParams(window.location.search);
+const viewId = urlParams.get("view");
 const editId = urlParams.get("edit");
-if (editId) {
+const openId = viewId || editId;
+if (openId) {
   api.agents
-    .get(editId)
+    .get(openId)
     .then(function (a) {
       currentAgentId = a.id;
       currentDetailAgent = a;
-      showFormPanel(a);
+      if (editId) {
+        showFormPanel(a);
+      } else {
+        showDetailPanel(a);
+      }
     })
-    .catch(console.error);
+    .catch(function (err) {
+      clientLog.error("agents", "Failed to load agent: " + err.message);
+    });
 }
 
 loadAgents().then(function () {
-  if (!editId) showEmptyPanel();
+  if (!openId) showEmptyPanel();
 });

@@ -31,6 +31,13 @@ router.get("/", (_req, res) => {
         response: "{ status, timestamp, uptime }",
       },
       {
+        method: "POST",
+        path: "/api/log",
+        description: "Receive client-side log entries",
+        request: "{ level: 'debug'|'info'|'warn'|'error', source: string, message: string }",
+        response: "{ success: true }",
+      },
+      {
         method: "GET",
         path: "/api/tools",
         description: "List available MCP tools",
@@ -189,6 +196,17 @@ router.get("/", (_req, res) => {
       },
     ],
   });
+});
+
+// POST /api/log - receive client-side log entries
+router.post("/log", (req, res) => {
+  const { level, source, message } = req.body ?? {};
+  const allowed = ["debug", "info", "warn", "error"] as const;
+  const lvl = allowed.includes(level) ? level : "info";
+  const src = typeof source === "string" ? `ui:${source}` : "ui";
+  const msg = typeof message === "string" ? message : String(message ?? "");
+  logger[lvl as (typeof allowed)[number]](src, msg);
+  res.json({ success: true });
 });
 
 // GET /api/health - server health check

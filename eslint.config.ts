@@ -94,6 +94,7 @@ export default defineConfig([
       globals: {
         // From api.js
         api: "readonly",
+        clientLog: "readonly",
         renderTags: "readonly",
         escapeHtml: "readonly",
         formatDate: "readonly",

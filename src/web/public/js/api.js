@@ -22,6 +22,51 @@ async function apiRequest(path, options = {}) {
   return response.json();
 }
 
+// Client-side logger: logs to console AND ships to server log files
+// Levels: debug < info < warn < error. Default level is "info".
+// Enable debug via localStorage: set key "persistent-memory-server" to JSON with "clientLog": "debug"
+const LOG_LEVELS = { debug: 0, info: 1, warn: 2, error: 3 };
+
+const clientLog = {
+  _getLevel() {
+    try {
+      const stored = JSON.parse(localStorage.getItem("persistent-memory-server") || "{}");
+      if (stored.clientLog && LOG_LEVELS[stored.clientLog] !== undefined) {
+        return LOG_LEVELS[stored.clientLog];
+      }
+    } catch {
+      // ignore
+    }
+    return LOG_LEVELS.info;
+  },
+  _send(level, source, message) {
+    fetch(`${API_BASE}/log`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ level, source, message }),
+    }).catch(() => {});
+  },
+  debug(source, message) {
+    if (this._getLevel() > LOG_LEVELS.debug) return;
+    console.debug(`[${source}]`, message);
+    this._send("debug", source, message);
+  },
+  info(source, message) {
+    if (this._getLevel() > LOG_LEVELS.info) return;
+    console.info(`[${source}]`, message);
+    this._send("info", source, message);
+  },
+  warn(source, message) {
+    if (this._getLevel() > LOG_LEVELS.warn) return;
+    console.warn(`[${source}]`, message);
+    this._send("warn", source, message);
+  },
+  error(source, message) {
+    console.error(`[${source}]`, message);
+    this._send("error", source, String(message));
+  },
+};
+
 const api = {
   // Memories
   memories: {
@@ -154,7 +199,7 @@ function setLocalStorage(data) {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(data));
   } catch {
-    console.warn("Failed to save to localStorage");
+    clientLog.warn("ui", "Failed to save to localStorage");
   }
 }
 
@@ -170,6 +215,7 @@ function toggleTheme() {
   stored.theme = next;
   setLocalStorage(stored);
   updateThemeButton();
+  clientLog.debug("theme", "Switched to " + next + " mode");
 }
 
 function updateThemeButton() {
@@ -184,3 +230,66 @@ function updateThemeButton() {
 }
 
 updateThemeButton();
+
+// Web Vitals reporting (debug mode only)
+(function reportWebVitals() {
+  if (clientLog._getLevel() > LOG_LEVELS.debug) return;
+
+  // Largest Contentful Paint
+  if (typeof PerformanceObserver !== "undefined") {
+    try {
+      new PerformanceObserver(function (list) {
+        const entries = list.getEntries();
+        const last = entries[entries.length - 1];
+        if (last) {
+          clientLog.debug("web-vitals", "LCP: " + Math.round(last.startTime) + "ms");
+        }
+      }).observe({ type: "largest-contentful-paint", buffered: true });
+    } catch (_e) {
+      // not supported
+    }
+
+    // Cumulative Layout Shift
+    try {
+      let clsValue = 0;
+      new PerformanceObserver(function (list) {
+        for (const entry of list.getEntries()) {
+          if (!entry.hadRecentInput) {
+            clsValue += entry.value;
+          }
+        }
+        clientLog.debug("web-vitals", "CLS: " + clsValue.toFixed(4));
+      }).observe({ type: "layout-shift", buffered: true });
+    } catch (_e) {
+      // not supported
+    }
+
+    // First Input Delay
+    try {
+      new PerformanceObserver(function (list) {
+        const entry = list.getEntries()[0];
+        if (entry) {
+          clientLog.debug(
+            "web-vitals",
+            "FID: " + Math.round(entry.processingStart - entry.startTime) + "ms",
+          );
+        }
+      }).observe({ type: "first-input", buffered: true });
+    } catch (_e) {
+      // not supported
+    }
+  }
+
+  // Navigation timing (TTFB, DOM load)
+  window.addEventListener("load", function () {
+    setTimeout(function () {
+      const nav = performance.getEntriesByType("navigation")[0];
+      if (nav) {
+        clientLog.debug("web-vitals", "TTFB: " + Math.round(nav.responseStart) + "ms");
+        clientLog.debug("web-vitals", "DOM Interactive: " + Math.round(nav.domInteractive) + "ms");
+        clientLog.debug("web-vitals", "DOM Complete: " + Math.round(nav.domComplete) + "ms");
+        clientLog.debug("web-vitals", "Load: " + Math.round(nav.loadEventEnd) + "ms");
+      }
+    }, 0);
+  });
+})();

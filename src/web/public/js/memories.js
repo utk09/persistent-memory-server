@@ -38,7 +38,7 @@ async function loadMemories() {
     currentMemories = await api.memories.list(params);
     renderList(currentMemories);
   } catch (err) {
-    console.error("Failed to load memories:", err);
+    clientLog.error("memories", "Failed to load memories: " + err.message);
   }
 }
 
@@ -94,6 +94,7 @@ function updateBulkBar() {
 
 async function bulkDelete() {
   if (!confirm(`Delete ${selectedIds.size} memories?`)) return;
+  clientLog.info("memories", "Bulk delete " + selectedIds.size + " memories");
   try {
     await api.bulkDelete("memory", [...selectedIds]);
     if (selectedIds.has(currentMemoryId)) {
@@ -111,6 +112,7 @@ async function bulkDelete() {
 async function navigateMemory(id) {
   if (id === currentMemoryId) return;
   if (!confirmLeave()) return;
+  clientLog.info("memories", "View memory " + id);
   try {
     const m = await api.memories.get(id);
     currentMemoryId = id;
@@ -238,11 +240,13 @@ function handleScopeChange() {
 }
 
 function openEditPanel() {
+  clientLog.info("memories", "Edit memory " + (currentDetailMemory ? currentDetailMemory.id : ""));
   showFormPanel(currentDetailMemory);
 }
 
 function openCreatePanel() {
   if (!confirmLeave()) return;
+  clientLog.info("memories", "Open create memory form");
   isDirty = false;
   currentMemoryId = null;
   currentDetailMemory = null;
@@ -261,6 +265,7 @@ function handleFormCancel() {
 }
 
 async function handleFormSubmit() {
+  clientLog.info("memories", "Submit memory form");
   const titleEl = document.getElementById("form-title");
   const contentEl = document.getElementById("form-content");
 
@@ -308,6 +313,7 @@ async function handleFormSubmit() {
 
 async function handleDelete() {
   if (!currentDetailMemory || !confirm("Delete this memory?")) return;
+  clientLog.info("memories", "Delete memory " + currentDetailMemory.id);
   try {
     await api.memories.delete(currentDetailMemory.id);
     isDirty = false;
@@ -321,16 +327,24 @@ async function handleDelete() {
 }
 
 const urlParams = new URLSearchParams(window.location.search);
+const viewId = urlParams.get("view");
 const editId = urlParams.get("edit");
-if (editId) {
+const openId = viewId || editId;
+if (openId) {
   api.memories
-    .get(editId)
+    .get(openId)
     .then(function (m) {
       currentMemoryId = m.id;
       currentDetailMemory = m;
-      showFormPanel(m);
+      if (editId) {
+        showFormPanel(m);
+      } else {
+        showDetailPanel(m);
+      }
     })
-    .catch(console.error);
+    .catch(function (err) {
+      clientLog.error("memories", "Failed to load memory: " + err.message);
+    });
 }
 
 loadMemories().then(function () {

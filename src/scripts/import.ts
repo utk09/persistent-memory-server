@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 
+import { logger } from "../core/logger.js";
 import { DATA_DIR } from "../core/utils.js";
 
 type ImportData = {
@@ -12,7 +13,7 @@ type ImportData = {
 async function main() {
   const filePath = process.argv[2];
   if (!filePath) {
-    console.error("Usage: jiti src/scripts/import.ts <path/to/export.json>");
+    logger.error("import", "Usage: jiti src/scripts/import.ts <path/to/export.json>");
     process.exit(1);
   }
 
@@ -37,7 +38,7 @@ async function main() {
     }
   }
 
-  console.info(`Imported ${imported} items from ${filePath}`);
+  logger.info("import", `Imported ${imported} items from ${filePath}`);
 }
 
-main().catch(console.error);
+main().catch((err) => logger.error("import", String(err)));

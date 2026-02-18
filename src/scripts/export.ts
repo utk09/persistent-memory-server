@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 
+import { logger } from "../core/logger.js";
 import { DATA_DIR } from "../core/utils.js";
 
 type ExportData = {
@@ -31,10 +32,10 @@ async function main() {
   const outPath = path.resolve(`export-${today}.json`);
   fs.writeFileSync(outPath, JSON.stringify(result, null, 2), "utf-8");
 
-  console.info(`Exported to: ${outPath}`);
-  console.info(`  memories : ${result.memories.length}`);
-  console.info(`  snippets : ${result.snippets.length}`);
-  console.info(`  agents   : ${result.agents.length}`);
+  logger.info("export", `Exported to: ${outPath}`);
+  logger.info("export", `  memories : ${result.memories.length}`);
+  logger.info("export", `  snippets : ${result.snippets.length}`);
+  logger.info("export", `  agents   : ${result.agents.length}`);
 }
 
-main().catch(console.error);
+main().catch((err) => logger.error("export", String(err)));
