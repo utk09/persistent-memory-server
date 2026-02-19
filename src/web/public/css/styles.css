@@ -901,7 +901,7 @@ label {
   border-radius: var(--radius);
   min-width: 0;
   overflow-y: auto;
-  max-height: calc(100vh - 150px);
+  /* max-height: calc(100vh - 150px); */
 }
 
 .panel-header {
