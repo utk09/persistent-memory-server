@@ -15,7 +15,8 @@ const router = Router();
 
 // GET /api/memories - list/search memories
 router.get("/", (req, res) => {
-  const { user, device, scope, projectPath, filePath, tags, q, includeExpired } = req.query;
+  const { user, device, scope, projectPath, filePath, tags, q, includeExpired, limit, offset } =
+    req.query;
 
   const filters = {
     user: user as string | undefined,
@@ -25,6 +26,8 @@ router.get("/", (req, res) => {
     filePath: filePath as string | undefined,
     tags: tags ? (tags as string).split(",") : undefined,
     includeExpired: includeExpired === "true",
+    limit: limit ? parseInt(limit as string, 10) : undefined,
+    offset: offset ? parseInt(offset as string, 10) : undefined,
   };
 
   if (q) {

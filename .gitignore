@@ -62,6 +62,9 @@ data/snippets/*.json
 data/agents/*.json
 data/sessions/*.json
 data/settings.json
+data/db.sqlite
+data/db.sqlite-wal
+data/db.sqlite-shm
 
 # Miscellaneous
 *.tgz

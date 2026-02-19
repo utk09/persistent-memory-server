@@ -15,13 +15,15 @@ const router = Router();
 
 // GET /api/snippets - list/search snippets
 router.get("/", (req, res) => {
-  const { user, device, type, tags, q } = req.query;
+  const { user, device, type, tags, q, limit, offset } = req.query;
 
   const filters = {
     user: user as string | undefined,
     device: device as string | undefined,
     type: type as SnippetType | undefined,
     tags: tags ? (tags as string).split(",") : undefined,
+    limit: limit ? parseInt(limit as string, 10) : undefined,
+    offset: offset ? parseInt(offset as string, 10) : undefined,
   };
 
   if (q) {

@@ -23,12 +23,6 @@ export function isExpired(expiresAt: string | undefined): boolean {
   return new Date(expiresAt).getTime() < Date.now();
 }
 
-export function searchMatches(text: string, query: string): boolean {
-  const lower = text.toLowerCase();
-  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
-  return terms.every((term) => lower.includes(term));
-}
-
 export function tagsMatch(entryTags: string[], filterTags: string[]): boolean {
   if (filterTags.length === 0) return true;
   return filterTags.every((filter) =>
