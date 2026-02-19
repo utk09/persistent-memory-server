@@ -144,3 +144,5 @@ npm run lint:fix      # Auto-fix lint issues
 ## Data Storage
 
 All data is stored as JSON files in the `data/` directory. Logs go to `logs/` with daily rotation (30-day retention). Neither is git-tracked.
+
+LICENSE: See [LICENSE](LICENSE) file for details - GNU AFFERO GENERAL PUBLIC LICENSE Version 3 (AGPL-3.0)
