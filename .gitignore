@@ -60,6 +60,8 @@ temp/
 data/memories/*.json
 data/snippets/*.json
 data/agents/*.json
+data/sessions/*.json
+data/settings.json
 
 # Miscellaneous
 *.tgz

@@ -8,6 +8,8 @@ export type MemoryScope = "global" | "project" | "file";
 
 export type Memory = {
   id: string;
+  user: string;
+  device: string;
   title: string;
   content: string;
   scope: MemoryScope;
@@ -20,6 +22,8 @@ export type Memory = {
 };
 
 type CreateMemoryInput = {
+  user: string;
+  device: string;
   title: string;
   content: string;
   scope: MemoryScope;
@@ -30,6 +34,8 @@ type CreateMemoryInput = {
 };
 
 type UpdateMemoryInput = {
+  user?: string;
+  device?: string;
   title?: string;
   content?: string;
   scope?: MemoryScope;
@@ -40,6 +46,8 @@ type UpdateMemoryInput = {
 };
 
 type ListMemoryFilters = {
+  user?: string;
+  device?: string;
   scope?: MemoryScope;
   projectPath?: string;
   filePath?: string;
@@ -48,6 +56,8 @@ type ListMemoryFilters = {
 };
 
 type RecallContext = {
+  user?: string;
+  device?: string;
   projectPath: string;
   filePath?: string;
 };
@@ -81,7 +91,11 @@ function getAllMemories(): Memory[] {
   for (const file of files) {
     try {
       const data = fs.readFileSync(path.join(dir, file), "utf-8");
-      memories.push(JSON.parse(data) as Memory);
+      const memory = JSON.parse(data) as Memory;
+      // Backward-compat defaults for entities created before user/device fields
+      if (!memory.user) memory.user = "legacy";
+      if (!memory.device) memory.device = "unknown";
+      memories.push(memory);
     } catch {
       // Skip corrupted files
     }
@@ -95,6 +109,8 @@ export function createMemory(input: CreateMemoryInput): Memory {
   const now = nowISO();
   const memory: Memory = {
     id: generateId(),
+    user: input.user,
+    device: input.device,
     title: input.title,
     content: input.content,
     scope: input.scope,
@@ -119,6 +135,8 @@ export function updateMemory(id: string, input: UpdateMemoryInput): Memory | nul
   const memory = readMemory(id);
   if (!memory) return null;
 
+  if (input.user !== undefined) memory.user = input.user;
+  if (input.device !== undefined) memory.device = input.device;
   if (input.title !== undefined) memory.title = input.title;
   if (input.content !== undefined) memory.content = input.content;
   if (input.scope !== undefined) memory.scope = input.scope;
@@ -155,6 +173,14 @@ export function listMemories(filters: ListMemoryFilters = {}): Memory[] {
     memories = memories.filter((m) => !isExpired(m.expiresAt));
   }
 
+  if (filters.user) {
+    memories = memories.filter((m) => m.user === filters.user);
+  }
+
+  if (filters.device) {
+    memories = memories.filter((m) => m.device === filters.device);
+  }
+
   if (filters.scope) {
     memories = memories.filter((m) => m.scope === filters.scope);
   }
@@ -180,7 +206,15 @@ export function searchMemories(query: string, filters: ListMemoryFilters = {}): 
 }
 
 export function recallMemories(context: RecallContext): Memory[] {
-  const all = getAllMemories().filter((m) => !isExpired(m.expiresAt));
+  let all = getAllMemories().filter((m) => !isExpired(m.expiresAt));
+
+  // Filter by user (all devices if device omitted)
+  if (context.user) {
+    all = all.filter((m) => m.user === context.user);
+  }
+  if (context.device) {
+    all = all.filter((m) => m.device === context.device);
+  }
 
   const results: Memory[] = [];
 

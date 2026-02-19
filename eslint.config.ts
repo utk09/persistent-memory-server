@@ -89,6 +89,7 @@ export default defineConfig([
       "src/web/public/js/memories.js",
       "src/web/public/js/snippets.js",
       "src/web/public/js/agents.js",
+      "src/web/public/js/sessions.js",
     ],
     languageOptions: {
       globals: {
@@ -102,6 +103,8 @@ export default defineConfig([
         isExpiringSoon: "readonly",
         setupModalClose: "readonly",
         debounce: "readonly",
+        getDefaultUser: "readonly",
+        getDefaultDevice: "readonly",
         // CDN libraries
         marked: "readonly",
       },

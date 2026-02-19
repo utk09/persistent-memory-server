@@ -21,6 +21,10 @@ export function registerMemoryTools(server: McpServer): void {
     {
       description: getToolDescription("memory_create"),
       inputSchema: {
+        user: z.string().describe("Identifier for the user creating this memory (e.g. 'alice')"),
+        device: z
+          .string()
+          .describe("Identifier for the device/machine (e.g. 'macbook-pro', 'mac1')"),
         title: z.string().describe("Title of the memory"),
         content: z.string().describe("Content of the memory (markdown supported)"),
         scope: scopeEnum.describe("Memory scope: global, project, or file"),
@@ -37,7 +41,7 @@ export function registerMemoryTools(server: McpServer): void {
       },
     },
     async (params) => {
-      logger.info("mcp", `memory_create: ${params.title}`);
+      logger.info("mcp", `memory_create: ${params.title} (${params.user}@${params.device})`);
       const memory = createMemory(params);
       return {
         content: [{ type: "text", text: JSON.stringify(memory, null, 2) }],
@@ -74,6 +78,8 @@ export function registerMemoryTools(server: McpServer): void {
       description: getToolDescription("memory_update"),
       inputSchema: {
         id: z.string().describe("Memory ID to update"),
+        user: z.string().optional().describe("New user identifier"),
+        device: z.string().optional().describe("New device identifier"),
         title: z.string().optional().describe("New title"),
         content: z.string().optional().describe("New content"),
         scope: scopeEnum.optional().describe("New scope"),
@@ -131,6 +137,14 @@ export function registerMemoryTools(server: McpServer): void {
     {
       description: getToolDescription("memory_list"),
       inputSchema: {
+        user: z
+          .string()
+          .optional()
+          .describe("Filter by user (required to scope results to a specific user)"),
+        device: z
+          .string()
+          .optional()
+          .describe("Filter by device (omit to get all devices for the user)"),
         scope: scopeEnum.optional().describe("Filter by scope"),
         projectPath: z.string().optional().describe("Filter by project path"),
         filePath: z.string().optional().describe("Filter by file path"),
@@ -142,7 +156,7 @@ export function registerMemoryTools(server: McpServer): void {
       },
     },
     async (params) => {
-      logger.info("mcp", "memory_list");
+      logger.info("mcp", `memory_list (${params.user ?? "*"}@${params.device ?? "*"})`);
       const memories = listMemories(params);
       return {
         content: [{ type: "text", text: JSON.stringify(memories, null, 2) }],
@@ -156,6 +170,11 @@ export function registerMemoryTools(server: McpServer): void {
       description: getToolDescription("memory_search"),
       inputSchema: {
         query: z.string().describe("Search query"),
+        user: z.string().describe("Filter by user (required to scope results to a specific user)"),
+        device: z
+          .string()
+          .optional()
+          .describe("Filter by device (omit to search all devices for the user)"),
         scope: scopeEnum.optional().describe("Filter by scope"),
         projectPath: z.string().optional().describe("Filter by project path"),
         filePath: z.string().optional().describe("Filter by file path"),
@@ -163,7 +182,7 @@ export function registerMemoryTools(server: McpServer): void {
       },
     },
     async (params) => {
-      logger.info("mcp", `memory_search: ${params.query}`);
+      logger.info("mcp", `memory_search: ${params.query} (${params.user}@${params.device ?? "*"})`);
       const { query, ...filters } = params;
       const memories = searchMemories(query, filters);
       return {
@@ -177,6 +196,8 @@ export function registerMemoryTools(server: McpServer): void {
     {
       description: getToolDescription("context_checkpoint"),
       inputSchema: {
+        user: z.string().describe("Identifier for the user saving this checkpoint"),
+        device: z.string().describe("Identifier for the device/machine"),
         title: z.string().describe("Short descriptive title for the checkpoint"),
         summary: z
           .string()
@@ -194,9 +215,11 @@ export function registerMemoryTools(server: McpServer): void {
       },
     },
     async (params) => {
-      logger.info("mcp", `context_checkpoint: ${params.title}`);
+      logger.info("mcp", `context_checkpoint: ${params.title} (${params.user}@${params.device})`);
       const today = new Date().toISOString().slice(0, 10);
       const memory = createMemory({
+        user: params.user,
+        device: params.device,
         title: params.title,
         content: params.summary,
         scope: params.projectPath ? "project" : "global",
@@ -219,6 +242,11 @@ export function registerMemoryTools(server: McpServer): void {
     {
       description: getToolDescription("memory_recall"),
       inputSchema: {
+        user: z.string().describe("User identifier to recall memories for"),
+        device: z
+          .string()
+          .optional()
+          .describe("Device identifier (omit to recall across all devices for the user)"),
         projectPath: z.string().describe("Current project path (absolute)"),
         filePath: z.string().optional().describe("Current file path (relative to project)"),
       },
@@ -226,7 +254,7 @@ export function registerMemoryTools(server: McpServer): void {
     async (params) => {
       logger.info(
         "mcp",
-        `memory_recall: ${params.projectPath}${params.filePath ? `/${params.filePath}` : ""}`,
+        `memory_recall: ${params.projectPath} (${params.user}@${params.device ?? "*"})`,
       );
       const memories = recallMemories(params);
       return {

@@ -19,13 +19,29 @@ document.querySelectorAll("#scope-tabs .tab").forEach(function (tab) {
 
 const searchInput = document.getElementById("search-input");
 const tagFilter = document.getElementById("tag-filter");
+const userFilter = document.getElementById("user-filter");
+const deviceFilter = document.getElementById("device-filter");
+const projectFilter = document.getElementById("project-filter");
 
 searchInput.addEventListener("input", debounce(loadMemories));
 tagFilter.addEventListener("input", debounce(loadMemories));
+userFilter.addEventListener("input", debounce(loadMemories));
+deviceFilter.addEventListener("input", debounce(loadMemories));
+projectFilter.addEventListener("input", debounce(loadMemories));
 
 function confirmLeave() {
   if (!isDirty) return true;
   return confirm("You have unsaved changes. Leave anyway?");
+}
+
+async function loadProjectPaths() {
+  try {
+    const paths = await api.memories.projects();
+    const datalist = document.getElementById("project-paths-list");
+    datalist.innerHTML = paths.map((p) => `<option value="${escapeHtml(p)}" />`).join("");
+  } catch (err) {
+    clientLog.error("memories", "Failed to load project paths: " + err.message);
+  }
 }
 
 async function loadMemories() {
@@ -33,6 +49,9 @@ async function loadMemories() {
   if (currentScope) params.scope = currentScope;
   if (searchInput.value.trim()) params.q = searchInput.value.trim();
   if (tagFilter.value.trim()) params.tags = tagFilter.value.trim();
+  if (userFilter.value.trim()) params.user = userFilter.value.trim();
+  if (deviceFilter.value.trim()) params.device = deviceFilter.value.trim();
+  if (projectFilter.value.trim()) params.projectPath = projectFilter.value.trim();
 
   try {
     currentMemories = await api.memories.list(params);
@@ -62,7 +81,7 @@ function renderList(memories) {
           <span class="card-title">${escapeHtml(m.title)}</span>
           <span class="badge badge-${m.scope}">${m.scope}</span>
         </div>
-        ${m.projectPath ? `<div class="card-meta">${escapeHtml(m.projectPath)}${m.filePath ? ` / ${escapeHtml(m.filePath)}` : ""}</div>` : ""}
+        <div class="card-meta">${escapeHtml(m.user)}@${escapeHtml(m.device)}${m.projectPath ? ` · ${escapeHtml(m.projectPath)}${m.filePath ? `/${escapeHtml(m.filePath)}` : ""}` : ""}</div>
         <div class="card-content">${escapeHtml(truncate(m.content))}</div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
           <div class="tags">${renderTags(m.tags)}</div>
@@ -142,6 +161,7 @@ function showDetailPanel(m) {
     <div class="panel-body">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
         <span class="badge badge-${m.scope}">${m.scope}</span>
+        <span class="card-meta">${escapeHtml(m.user)}@${escapeHtml(m.device)}</span>
         ${m.projectPath ? `<span class="card-meta">${escapeHtml(m.projectPath)}${m.filePath ? ` / ${escapeHtml(m.filePath)}` : ""}</span>` : ""}
         <span class="card-meta">${formatDate(m.updatedAt)}</span>
         ${m.expiresAt ? `<span class="expiry-warning">Expires ${formatDate(m.expiresAt)}</span>` : ""}
@@ -167,6 +187,16 @@ function showFormPanel(memory) {
     </div>
     <div class="panel-body">
       <input type="hidden" id="form-id" />
+      <div class="form-row">
+        <div class="form-group">
+          <label for="form-user">User <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="form-user" placeholder="e.g. alice" required />
+        </div>
+        <div class="form-group">
+          <label for="form-device">Device <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="form-device" placeholder="e.g. macbook-pro" required />
+        </div>
+      </div>
       <div class="form-group">
         <label for="form-title">Title</label>
         <input type="text" id="form-title" required />
@@ -206,6 +236,8 @@ function showFormPanel(memory) {
 
   if (isEdit) {
     document.getElementById("form-id").value = memory.id;
+    document.getElementById("form-user").value = memory.user || "";
+    document.getElementById("form-device").value = memory.device || "";
     document.getElementById("form-title").value = memory.title;
     document.getElementById("form-content").value = memory.content;
     document.getElementById("form-scope").value = memory.scope;
@@ -217,6 +249,8 @@ function showFormPanel(memory) {
     }
   } else {
     document.getElementById("form-scope").value = currentScope || "global";
+    document.getElementById("form-user").value = getDefaultUser();
+    document.getElementById("form-device").value = getDefaultDevice();
   }
 
   handleScopeChange();
@@ -268,7 +302,13 @@ async function handleFormSubmit() {
   clientLog.info("memories", "Submit memory form");
   const titleEl = document.getElementById("form-title");
   const contentEl = document.getElementById("form-content");
+  const userEl = document.getElementById("form-user");
+  const deviceEl = document.getElementById("form-device");
 
+  if (!userEl.value.trim() || !deviceEl.value.trim()) {
+    alert("User and device are required.");
+    return;
+  }
   if (!titleEl.value.trim() || !contentEl.value.trim()) {
     alert("Title and content are required.");
     return;
@@ -285,6 +325,8 @@ async function handleFormSubmit() {
   const expiresInput = document.getElementById("form-expires").value;
 
   const data = {
+    user: userEl.value.trim(),
+    device: deviceEl.value.trim(),
     title: titleEl.value.trim(),
     content: contentEl.value,
     scope: document.getElementById("form-scope").value,
@@ -330,12 +372,15 @@ const urlParams = new URLSearchParams(window.location.search);
 const viewId = urlParams.get("view");
 const editId = urlParams.get("edit");
 const openId = viewId || editId;
+loadProjectPaths();
+
 if (openId) {
   api.memories
     .get(openId)
-    .then(function (m) {
+    .then(async function (m) {
       currentMemoryId = m.id;
       currentDetailMemory = m;
+      await loadMemories();
       if (editId) {
         showFormPanel(m);
       } else {
@@ -345,8 +390,8 @@ if (openId) {
     .catch(function (err) {
       clientLog.error("memories", "Failed to load memory: " + err.message);
     });
+} else {
+  loadMemories().then(function () {
+    showEmptyPanel();
+  });
 }
-
-loadMemories().then(function () {
-  if (!editId) showEmptyPanel();
-});

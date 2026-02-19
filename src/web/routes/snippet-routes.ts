@@ -15,9 +15,11 @@ const router = Router();
 
 // GET /api/snippets - list/search snippets
 router.get("/", (req, res) => {
-  const { type, tags, q } = req.query;
+  const { user, device, type, tags, q } = req.query;
 
   const filters = {
+    user: user as string | undefined,
+    device: device as string | undefined,
     type: type as SnippetType | undefined,
     tags: tags ? (tags as string).split(",") : undefined,
   };

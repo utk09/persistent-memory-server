@@ -18,7 +18,9 @@
       <a href="/memories.html">Memories</a>
       <a href="/snippets.html">Snippets</a>
       <a href="/agents.html" class="active">Agents</a>
-      <button id="theme-toggle" class="btn btn-sm" onclick="toggleTheme()" style="margin-left: auto">🌙</button>
+      <a href="/sessions.html">Sessions</a>
+      <button id="identity-btn" class="btn btn-sm" onclick="openIdentityModal()" style="margin-left: auto; font-family: var(--font-mono); font-size: 11px"></button>
+      <button id="theme-toggle" class="btn btn-sm" onclick="toggleTheme()">🌙</button>
     </nav>
 
     <div class="page-header">
@@ -32,6 +34,12 @@
           <input type="search" aria-label="search-input" id="search-input" placeholder="Search agents..." />
           <input type="text" aria-label="tag-filter" id="tag-filter" placeholder="Filter by tags"
             style="max-width: 180px" />
+        </div>
+        <div class="toolbar" style="margin-bottom: 8px">
+          <input type="text" aria-label="user-filter" id="user-filter" placeholder="Filter by user"
+            style="max-width: 160px" />
+          <input type="text" aria-label="device-filter" id="device-filter" placeholder="Filter by device"
+            style="max-width: 160px" />
         </div>
 
         <div class="bulk-bar" id="bulk-bar">

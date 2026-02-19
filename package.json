@@ -13,7 +13,9 @@
     "import:file": "jiti src/scripts/import.ts",
     "lint": "eslint ./ && tsc --noEmit",
     "lint:fix": "eslint ./ --fix",
+    "migrate:owner": "jiti src/scripts/migrate-owner.ts",
     "start:mcp": "jiti src/mcp/server.ts",
+    "start:mcp-http": "jiti src/mcp/server.ts --http",
     "start:web": "jiti src/web/server.ts",
     "stats": "jiti src/scripts/stats.ts"
   },

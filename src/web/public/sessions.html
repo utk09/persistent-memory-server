@@ -4,9 +4,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Snippets - Memory Server</title>
+  <title>Sessions - Memory Server</title>
   <link rel="stylesheet" href="/css/styles.css" />
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>(function () { try { const s = JSON.parse(localStorage.getItem("persistent-memory-server") || "{}"); if (s.theme) document.documentElement.className = s.theme; } catch (e) { } }());</script>
 </head>
 
@@ -16,45 +15,33 @@
       <a href="/" class="logo">Memory Server</a>
       <a href="/">Dashboard</a>
       <a href="/memories.html">Memories</a>
-      <a href="/snippets.html" class="active">Snippets</a>
+      <a href="/snippets.html">Snippets</a>
       <a href="/agents.html">Agents</a>
-      <a href="/sessions.html">Sessions</a>
+      <a href="/sessions.html" class="active">Sessions</a>
       <button id="identity-btn" class="btn btn-sm" onclick="openIdentityModal()" style="margin-left: auto; font-family: var(--font-mono); font-size: 11px"></button>
       <button id="theme-toggle" class="btn btn-sm" onclick="toggleTheme()">🌙</button>
     </nav>
 
     <div class="page-header">
-      <h1>Snippets</h1>
-      <button class="btn btn-primary" onclick="openCreatePanel()">+ New Snippet</button>
+      <h1>Sessions</h1>
+      <button class="btn" onclick="loadSessions()">Refresh</button>
     </div>
 
     <div class="two-col-layout">
       <div class="two-col-left">
         <div class="toolbar" style="margin-bottom: 8px">
-          <input type="search" aria-label="search-input" id="search-input" placeholder="Search snippets..." />
-          <select id="type-filter" style="width: auto; min-width: 110px">
-            <option value="">All Types</option>
-            <option value="script">Script</option>
-            <option value="snippet">Snippet</option>
-            <option value="template">Template</option>
-            <option value="reference">Reference</option>
-            <option value="tool">Tool</option>
-          </select>
-          <input type="text" aria-label="tag-filter" id="tag-filter" placeholder="Filter by tags" />
-        </div>
-        <div class="toolbar" style="margin-bottom: 8px">
           <input type="text" aria-label="user-filter" id="user-filter" placeholder="Filter by user"
             style="max-width: 160px" />
           <input type="text" aria-label="device-filter" id="device-filter" placeholder="Filter by device"
             style="max-width: 160px" />
+          <select id="active-filter" style="width: auto; min-width: 110px">
+            <option value="">All</option>
+            <option value="true">Active</option>
+            <option value="false">Closed</option>
+          </select>
         </div>
 
-        <div class="bulk-bar" id="bulk-bar">
-          <span class="bulk-count" id="bulk-count">0 selected</span>
-          <button class="btn btn-sm btn-danger" onclick="bulkDelete()">Delete Selected</button>
-        </div>
-
-        <div class="card-list" id="snippet-list">
+        <div class="card-list" id="session-list">
           <div class="empty-state">
             <p>Loading...</p>
           </div>
@@ -63,14 +50,14 @@
 
       <div class="two-col-right" id="detail-panel">
         <div class="panel-empty">
-          <p>Select a snippet or create a new one</p>
+          <p>Select a session to view details</p>
         </div>
       </div>
     </div>
   </div>
 
   <script src="/js/api.js"></script>
-  <script src="/js/snippets.js"></script>
+  <script src="/js/sessions.js"></script>
 </body>
 
 </html>

@@ -76,6 +76,8 @@ const api = {
       if (params.projectPath) query.set("projectPath", params.projectPath);
       if (params.filePath) query.set("filePath", params.filePath);
       if (params.tags) query.set("tags", params.tags);
+      if (params.user) query.set("user", params.user);
+      if (params.device) query.set("device", params.device);
       if (params.q) query.set("q", params.q);
       if (params.includeExpired) query.set("includeExpired", "true");
       const qs = query.toString();
@@ -86,6 +88,7 @@ const api = {
     update: (id, data) => apiRequest(`/memories/${id}`, { method: "PUT", body: data }),
     delete: (id) => apiRequest(`/memories/${id}`, { method: "DELETE" }),
     recall: (data) => apiRequest("/memories/recall", { method: "POST", body: data }),
+    projects: () => apiRequest("/memories/projects"),
   },
 
   // Snippets
@@ -94,6 +97,8 @@ const api = {
       const query = new URLSearchParams();
       if (params.type) query.set("type", params.type);
       if (params.tags) query.set("tags", params.tags);
+      if (params.user) query.set("user", params.user);
+      if (params.device) query.set("device", params.device);
       if (params.q) query.set("q", params.q);
       const qs = query.toString();
       return apiRequest(`/snippets${qs ? `?${qs}` : ""}`);
@@ -109,6 +114,8 @@ const api = {
     list: (params = {}) => {
       const query = new URLSearchParams();
       if (params.tags) query.set("tags", params.tags);
+      if (params.user) query.set("user", params.user);
+      if (params.device) query.set("device", params.device);
       if (params.q) query.set("q", params.q);
       const qs = query.toString();
       return apiRequest(`/agents${qs ? `?${qs}` : ""}`);
@@ -117,6 +124,25 @@ const api = {
     create: (data) => apiRequest("/agents", { method: "POST", body: data }),
     update: (id, data) => apiRequest(`/agents/${id}`, { method: "PUT", body: data }),
     delete: (id) => apiRequest(`/agents/${id}`, { method: "DELETE" }),
+  },
+
+  // Sessions (read-only)
+  sessions: {
+    list: (params = {}) => {
+      const query = new URLSearchParams();
+      if (params.user) query.set("user", params.user);
+      if (params.device) query.set("device", params.device);
+      if (params.active !== undefined) query.set("active", String(params.active));
+      const qs = query.toString();
+      return apiRequest(`/sessions${qs ? `?${qs}` : ""}`);
+    },
+    get: (id) => apiRequest(`/sessions/${id}`),
+  },
+
+  // Settings
+  settings: {
+    get: () => apiRequest("/settings"),
+    update: (data) => apiRequest("/settings", { method: "PUT", body: data }),
   },
 
   // System
@@ -203,6 +229,93 @@ function setLocalStorage(data) {
   }
 }
 
+// Identity helpers
+function getDefaultUser() {
+  return getLocalStorage().defaultUser || "";
+}
+
+function getDefaultDevice() {
+  return getLocalStorage().defaultDevice || "";
+}
+
+function setDefaultIdentity(user, device) {
+  const stored = getLocalStorage();
+  stored.defaultUser = user;
+  stored.defaultDevice = device;
+  setLocalStorage(stored);
+}
+
+function updateIdentityBtn() {
+  const btn = document.getElementById("identity-btn");
+  if (!btn) return;
+  const user = getDefaultUser();
+  const device = getDefaultDevice();
+  btn.textContent = user || device ? `${user || "?"}@${device || "?"}` : "Set identity";
+}
+
+function openIdentityModal() {
+  const existing = document.getElementById("identity-modal");
+  if (existing) existing.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "identity-modal";
+  overlay.className = "modal-overlay";
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:380px">
+      <div class="modal-header">
+        <h2>Identity</h2>
+        <button class="modal-close" onclick="closeIdentityModal()">✕</button>
+      </div>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">
+        Your default user and device name, pre-filled when creating new items.
+      </p>
+      <div class="form-group">
+        <label for="identity-user">User</label>
+        <input type="text" id="identity-user" placeholder="e.g. alice" value="${escapeHtml(getDefaultUser())}" />
+      </div>
+      <div class="form-group">
+        <label for="identity-device">Device</label>
+        <input type="text" id="identity-device" placeholder="e.g. macbook-pro" value="${escapeHtml(getDefaultDevice())}" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeIdentityModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveIdentity()">Save</button>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeIdentityModal();
+  });
+  document.body.appendChild(overlay);
+  document.getElementById("identity-user").focus();
+}
+
+function closeIdentityModal() {
+  const modal = document.getElementById("identity-modal");
+  if (modal) modal.remove();
+}
+
+function saveIdentity() {
+  const user = document.getElementById("identity-user").value.trim();
+  const device = document.getElementById("identity-device").value.trim();
+  setDefaultIdentity(user, device);
+  updateIdentityBtn();
+  api.settings.update({ defaultUser: user, defaultDevice: device }).catch(() => {});
+  closeIdentityModal();
+}
+
+function syncIdentityFromServer() {
+  api.settings
+    .get()
+    .then(function (settings) {
+      if (settings.defaultUser || settings.defaultDevice) {
+        setDefaultIdentity(settings.defaultUser || "", settings.defaultDevice || "");
+        updateIdentityBtn();
+      }
+    })
+    .catch(function () {});
+}
+
 function toggleTheme() {
   const root = document.documentElement;
   const isDark =
@@ -230,6 +343,8 @@ function updateThemeButton() {
 }
 
 updateThemeButton();
+updateIdentityBtn();
+syncIdentityFromServer();
 
 // Web Vitals reporting (debug mode only)
 (function reportWebVitals() {

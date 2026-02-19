@@ -8,6 +8,8 @@ export type SnippetType = "script" | "snippet" | "template" | "reference" | "too
 
 export type Snippet = {
   id: string;
+  user: string;
+  device: string;
   title: string;
   content: string;
   type: SnippetType;
@@ -18,6 +20,8 @@ export type Snippet = {
 };
 
 type CreateSnippetInput = {
+  user: string;
+  device: string;
   title: string;
   content: string;
   type: SnippetType;
@@ -26,6 +30,8 @@ type CreateSnippetInput = {
 };
 
 type UpdateSnippetInput = {
+  user?: string;
+  device?: string;
   title?: string;
   content?: string;
   type?: SnippetType;
@@ -34,6 +40,8 @@ type UpdateSnippetInput = {
 };
 
 type ListSnippetFilters = {
+  user?: string;
+  device?: string;
   type?: SnippetType;
   tags?: string[];
 };
@@ -67,7 +75,11 @@ function getAllSnippets(): Snippet[] {
   for (const file of files) {
     try {
       const data = fs.readFileSync(path.join(dir, file), "utf-8");
-      snippets.push(JSON.parse(data) as Snippet);
+      const snippet = JSON.parse(data) as Snippet;
+      // Backward-compat defaults for entities created before user/device fields
+      if (!snippet.user) snippet.user = "legacy";
+      if (!snippet.device) snippet.device = "unknown";
+      snippets.push(snippet);
     } catch {
       // Skip corrupted files
     }
@@ -80,6 +92,8 @@ export function createSnippet(input: CreateSnippetInput): Snippet {
   const now = nowISO();
   const snippet: Snippet = {
     id: generateId(),
+    user: input.user,
+    device: input.device,
     title: input.title,
     content: input.content,
     type: input.type,
@@ -102,6 +116,8 @@ export function updateSnippet(id: string, input: UpdateSnippetInput): Snippet | 
   const snippet = readSnippet(id);
   if (!snippet) return null;
 
+  if (input.user !== undefined) snippet.user = input.user;
+  if (input.device !== undefined) snippet.device = input.device;
   if (input.title !== undefined) snippet.title = input.title;
   if (input.content !== undefined) snippet.content = input.content;
   if (input.type !== undefined) snippet.type = input.type;
@@ -131,6 +147,14 @@ export function deleteSnippet(id: string): boolean {
 
 export function listSnippets(filters: ListSnippetFilters = {}): Snippet[] {
   let snippets = getAllSnippets();
+
+  if (filters.user) {
+    snippets = snippets.filter((s) => s.user === filters.user);
+  }
+
+  if (filters.device) {
+    snippets = snippets.filter((s) => s.device === filters.device);
+  }
 
   if (filters.type) {
     snippets = snippets.filter((s) => s.type === filters.type);

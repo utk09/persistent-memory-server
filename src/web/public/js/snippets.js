@@ -7,10 +7,14 @@ const selectedIds = new Set();
 const searchInput = document.getElementById("search-input");
 const typeFilter = document.getElementById("type-filter");
 const tagFilter = document.getElementById("tag-filter");
+const userFilter = document.getElementById("user-filter");
+const deviceFilter = document.getElementById("device-filter");
 
 searchInput.addEventListener("input", debounce(loadSnippets));
 typeFilter.addEventListener("change", loadSnippets);
 tagFilter.addEventListener("input", debounce(loadSnippets));
+userFilter.addEventListener("input", debounce(loadSnippets));
+deviceFilter.addEventListener("input", debounce(loadSnippets));
 
 function confirmLeave() {
   if (!isDirty) return true;
@@ -22,6 +26,8 @@ async function loadSnippets() {
   if (searchInput.value.trim()) params.q = searchInput.value.trim();
   if (typeFilter.value) params.type = typeFilter.value;
   if (tagFilter.value.trim()) params.tags = tagFilter.value.trim();
+  if (userFilter.value.trim()) params.user = userFilter.value.trim();
+  if (deviceFilter.value.trim()) params.device = deviceFilter.value.trim();
 
   try {
     currentSnippets = await api.snippets.list(params);
@@ -54,6 +60,7 @@ function renderList(snippets) {
             ${s.language ? `<span class="badge" style="background:var(--bg-secondary);color:var(--text-secondary);border:1px solid var(--border)">${escapeHtml(s.language)}</span>` : ""}
           </div>
         </div>
+        <div class="card-meta">${escapeHtml(s.user)}@${escapeHtml(s.device)}</div>
         <div class="card-content"><code>${escapeHtml(truncate(s.content, 100))}</code></div>
         <div class="tags" style="margin-top:6px">${renderTags(s.tags)}</div>
       </div>
@@ -139,6 +146,7 @@ function showDetailPanel(s) {
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
         <span class="badge badge-${s.type}">${s.type}</span>
         ${s.language ? `<span class="badge" style="background:var(--bg-secondary);color:var(--text-secondary);border:1px solid var(--border)">${escapeHtml(s.language)}</span>` : ""}
+        <span class="card-meta">${escapeHtml(s.user)}@${escapeHtml(s.device)}</span>
         <span class="card-meta">${formatDate(s.updatedAt)}</span>
       </div>
       <div class="markdown-content">${contentHtml}</div>
@@ -162,6 +170,16 @@ function showFormPanel(snippet) {
     </div>
     <div class="panel-body">
       <input type="hidden" id="form-id" />
+      <div class="form-row">
+        <div class="form-group">
+          <label for="form-user">User <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="form-user" placeholder="e.g. alice" required />
+        </div>
+        <div class="form-group">
+          <label for="form-device">Device <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="form-device" placeholder="e.g. macbook-pro" required />
+        </div>
+      </div>
       <div class="form-group">
         <label for="form-title">Title</label>
         <input type="text" id="form-title" required />
@@ -195,11 +213,16 @@ function showFormPanel(snippet) {
 
   if (isEdit) {
     document.getElementById("form-id").value = snippet.id;
+    document.getElementById("form-user").value = snippet.user || "";
+    document.getElementById("form-device").value = snippet.device || "";
     document.getElementById("form-title").value = snippet.title;
     document.getElementById("form-type").value = snippet.type;
     document.getElementById("form-language").value = snippet.language || "";
     document.getElementById("form-content").value = snippet.content;
     document.getElementById("form-tags").value = snippet.tags.join(", ");
+  } else {
+    document.getElementById("form-user").value = getDefaultUser();
+    document.getElementById("form-device").value = getDefaultDevice();
   }
 
   panel.querySelectorAll("input, textarea, select").forEach(function (el) {
@@ -244,7 +267,13 @@ async function handleFormSubmit() {
   clientLog.info("snippets", "Submit snippet form");
   const titleEl = document.getElementById("form-title");
   const contentEl = document.getElementById("form-content");
+  const userEl = document.getElementById("form-user");
+  const deviceEl = document.getElementById("form-device");
 
+  if (!userEl.value.trim() || !deviceEl.value.trim()) {
+    alert("User and device are required.");
+    return;
+  }
   if (!titleEl.value.trim() || !contentEl.value.trim()) {
     alert("Title and content are required.");
     return;
@@ -260,6 +289,8 @@ async function handleFormSubmit() {
     .filter(Boolean);
 
   const data = {
+    user: userEl.value.trim(),
+    device: deviceEl.value.trim(),
     title: titleEl.value.trim(),
     content: contentEl.value,
     type: document.getElementById("form-type").value,
@@ -306,9 +337,10 @@ const openId = viewId || editId;
 if (openId) {
   api.snippets
     .get(openId)
-    .then(function (s) {
+    .then(async function (s) {
       currentSnippetId = s.id;
       currentDetailSnippet = s;
+      await loadSnippets();
       if (editId) {
         showFormPanel(s);
       } else {
@@ -318,8 +350,8 @@ if (openId) {
     .catch(function (err) {
       clientLog.error("snippets", "Failed to load snippet: " + err.message);
     });
+} else {
+  loadSnippets().then(function () {
+    showEmptyPanel();
+  });
 }
-
-loadSnippets().then(function () {
-  if (!openId) showEmptyPanel();
-});

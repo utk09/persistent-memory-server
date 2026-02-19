@@ -20,6 +20,10 @@ export function registerAgentTools(server: McpServer): void {
     {
       description: getToolDescription("agent_create"),
       inputSchema: {
+        user: z.string().describe("Identifier for the user creating this agent (e.g. 'alice')"),
+        device: z
+          .string()
+          .describe("Identifier for the device/machine (e.g. 'macbook-pro', 'mac1')"),
         name: z.string().describe("Agent name"),
         description: z.string().describe("Agent description"),
         systemPrompt: z.string().describe("System prompt for the agent"),
@@ -34,7 +38,7 @@ export function registerAgentTools(server: McpServer): void {
       },
     },
     async (params) => {
-      logger.info("mcp", `agent_create: ${params.name}`);
+      logger.info("mcp", `agent_create: ${params.name} (${params.user}@${params.device})`);
       const agent = createAgent(params);
       return {
         content: [{ type: "text", text: JSON.stringify(agent, null, 2) }],
@@ -71,6 +75,8 @@ export function registerAgentTools(server: McpServer): void {
       description: getToolDescription("agent_update"),
       inputSchema: {
         id: z.string().describe("Agent ID to update"),
+        user: z.string().optional().describe("New user identifier"),
+        device: z.string().optional().describe("New device identifier"),
         name: z.string().optional().describe("New name"),
         description: z.string().optional().describe("New description"),
         systemPrompt: z.string().optional().describe("New system prompt"),
@@ -129,11 +135,16 @@ export function registerAgentTools(server: McpServer): void {
     {
       description: getToolDescription("agent_list"),
       inputSchema: {
+        user: z.string().describe("Filter by user (required to scope results to a specific user)"),
+        device: z
+          .string()
+          .optional()
+          .describe("Filter by device (omit to get all devices for the user)"),
         tags: z.array(z.string()).optional().describe("Filter by tags"),
       },
     },
     async (params) => {
-      logger.info("mcp", "agent_list");
+      logger.info("mcp", `agent_list (${params.user}@${params.device ?? "*"})`);
       const agents = listAgents(params);
       return {
         content: [{ type: "text", text: JSON.stringify(agents, null, 2) }],
@@ -147,11 +158,16 @@ export function registerAgentTools(server: McpServer): void {
       description: getToolDescription("agent_search"),
       inputSchema: {
         query: z.string().describe("Search query"),
+        user: z.string().describe("Filter by user (required to scope results to a specific user)"),
+        device: z
+          .string()
+          .optional()
+          .describe("Filter by device (omit to search all devices for the user)"),
         tags: z.array(z.string()).optional().describe("Filter by tags"),
       },
     },
     async (params) => {
-      logger.info("mcp", `agent_search: ${params.query}`);
+      logger.info("mcp", `agent_search: ${params.query} (${params.user}@${params.device ?? "*"})`);
       const { query, ...filters } = params;
       const agents = searchAgents(query, filters);
       return {

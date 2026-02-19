@@ -5,6 +5,8 @@ import path from "path";
 import { countAgents, deleteAgent, listAgents } from "../../core/agent-store.js";
 import { logger } from "../../core/logger.js";
 import { countMemories, deleteMemory, listMemories } from "../../core/memory-store.js";
+import { countActiveSessions, countSessions } from "../../core/session-store.js";
+import { getSettings, updateSettings } from "../../core/settings-store.js";
 import { countSnippets, deleteSnippet, listSnippets } from "../../core/snippet-store.js";
 import { TOOL_CATALOG } from "../../core/tool-catalog.js";
 import { DATA_DIR } from "../../core/utils.js";
@@ -194,6 +196,20 @@ router.get("/", (_req, res) => {
         request: "param: id",
         response: "{ success }",
       },
+      {
+        method: "GET",
+        path: "/api/sessions",
+        description: "List sessions",
+        request: "query: ?user &device &active",
+        response: "Session[]",
+      },
+      {
+        method: "GET",
+        path: "/api/sessions/:id",
+        description: "Get a session by internal ID",
+        request: "param: id",
+        response: "Session",
+      },
     ],
   });
 });
@@ -222,6 +238,19 @@ router.get("/health", (_req, res) => {
 router.get("/tools", (_req, res) => {
   logger.info("web", "GET /api/tools");
   res.json(TOOL_CATALOG);
+});
+
+// GET /api/settings - get server-side settings
+router.get("/settings", (_req, res) => {
+  logger.info("web", "GET /api/settings");
+  res.json(getSettings());
+});
+
+// PUT /api/settings - update server-side settings
+router.put("/settings", (req, res) => {
+  logger.info("web", "PUT /api/settings");
+  const settings = updateSettings(req.body);
+  res.json(settings);
 });
 
 // GET /api/stats - dashboard stats
@@ -261,6 +290,8 @@ router.get("/stats", (_req, res) => {
       memories: countMemories(),
       snippets: countSnippets(),
       agents: countAgents(),
+      sessions: countSessions(),
+      activeSessions: countActiveSessions(),
     },
     recent,
   });

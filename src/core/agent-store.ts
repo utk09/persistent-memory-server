@@ -8,6 +8,8 @@ export type AgentPermission = "read-only" | "read-write";
 
 export type Agent = {
   id: string;
+  user: string;
+  device: string;
   name: string;
   description: string;
   systemPrompt: string;
@@ -21,6 +23,8 @@ export type Agent = {
 };
 
 type CreateAgentInput = {
+  user: string;
+  device: string;
   name: string;
   description: string;
   systemPrompt: string;
@@ -32,6 +36,8 @@ type CreateAgentInput = {
 };
 
 type UpdateAgentInput = {
+  user?: string;
+  device?: string;
   name?: string;
   description?: string;
   systemPrompt?: string;
@@ -43,6 +49,8 @@ type UpdateAgentInput = {
 };
 
 type ListAgentFilters = {
+  user?: string;
+  device?: string;
   tags?: string[];
 };
 
@@ -75,7 +83,11 @@ function getAllAgents(): Agent[] {
   for (const file of files) {
     try {
       const data = fs.readFileSync(path.join(dir, file), "utf-8");
-      agents.push(JSON.parse(data) as Agent);
+      const agent = JSON.parse(data) as Agent;
+      // Backward-compat defaults for entities created before user/device fields
+      if (!agent.user) agent.user = "legacy";
+      if (!agent.device) agent.device = "unknown";
+      agents.push(agent);
     } catch {
       // Skip corrupted files
     }
@@ -107,8 +119,11 @@ export function createAgent(input: CreateAgentInput): Agent {
   const now = nowISO();
   const agent: Agent = {
     id: generateId(),
+    user: input.user,
+    device: input.device,
     name: input.name,
     description: input.description,
+    model: input.model,
     systemPrompt: input.systemPrompt,
     tools: input.tools ?? [],
     permission: input.permission ?? "read-only",
@@ -117,8 +132,6 @@ export function createAgent(input: CreateAgentInput): Agent {
     createdAt: now,
     updatedAt: now,
   };
-
-  if (input.model) agent.model = input.model;
   writeAgent(agent);
   logger.info("agent-store", `Created agent: ${agent.id} (${agent.name})`);
   return agent;
@@ -134,6 +147,8 @@ export function updateAgent(id: string, input: UpdateAgentInput): Agent | null {
   const agent = readAgent(id);
   if (!agent) return null;
 
+  if (input.user !== undefined) agent.user = input.user;
+  if (input.device !== undefined) agent.device = input.device;
   if (input.name !== undefined) agent.name = input.name;
   if (input.description !== undefined) agent.description = input.description;
   if (input.systemPrompt !== undefined) agent.systemPrompt = input.systemPrompt;
@@ -170,6 +185,14 @@ export function deleteAgent(id: string): boolean {
 
 export function listAgents(filters: ListAgentFilters = {}): Agent[] {
   let agents = getAllAgents().map(resolvePermission);
+
+  if (filters.user) {
+    agents = agents.filter((a) => a.user === filters.user);
+  }
+
+  if (filters.device) {
+    agents = agents.filter((a) => a.device === filters.device);
+  }
 
   if (filters.tags && filters.tags.length > 0) {
     agents = agents.filter((a) => tagsMatch(a.tags, filters.tags!));

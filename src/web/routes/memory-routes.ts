@@ -15,9 +15,11 @@ const router = Router();
 
 // GET /api/memories - list/search memories
 router.get("/", (req, res) => {
-  const { scope, projectPath, filePath, tags, q, includeExpired } = req.query;
+  const { user, device, scope, projectPath, filePath, tags, q, includeExpired } = req.query;
 
   const filters = {
+    user: user as string | undefined,
+    device: device as string | undefined,
     scope: scope as "global" | "project" | "file" | undefined,
     projectPath: projectPath as string | undefined,
     filePath: filePath as string | undefined,
@@ -45,10 +47,20 @@ router.post("/", (req, res) => {
 
 // POST /api/memories/recall - get relevant memories for context
 router.post("/recall", (req, res) => {
-  const { projectPath, filePath } = req.body;
-  logger.info("web", `POST /api/memories/recall: ${projectPath}`);
-  const memories = recallMemories({ projectPath, filePath });
+  const { user, device, projectPath, filePath } = req.body;
+  logger.info("web", `POST /api/memories/recall: ${projectPath} (${user ?? "*"}@${device ?? "*"})`);
+  const memories = recallMemories({ user, device, projectPath, filePath });
   res.json(memories);
+});
+
+// GET /api/memories/projects - list unique project paths
+router.get("/projects", (_req, res) => {
+  logger.info("web", "GET /api/memories/projects");
+  const memories = listMemories({});
+  const paths = [
+    ...new Set(memories.filter((m) => m.projectPath).map((m) => m.projectPath!)),
+  ].sort();
+  res.json(paths);
 });
 
 // GET /api/memories/:id - get memory

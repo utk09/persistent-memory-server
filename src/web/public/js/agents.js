@@ -6,9 +6,13 @@ const selectedIds = new Set();
 
 const searchInput = document.getElementById("search-input");
 const tagFilter = document.getElementById("tag-filter");
+const userFilter = document.getElementById("user-filter");
+const deviceFilter = document.getElementById("device-filter");
 
 searchInput.addEventListener("input", debounce(loadAgents));
 tagFilter.addEventListener("input", debounce(loadAgents));
+userFilter.addEventListener("input", debounce(loadAgents));
+deviceFilter.addEventListener("input", debounce(loadAgents));
 
 function confirmLeave() {
   if (!isDirty) return true;
@@ -19,6 +23,8 @@ async function loadAgents() {
   const params = {};
   if (searchInput.value.trim()) params.q = searchInput.value.trim();
   if (tagFilter.value.trim()) params.tags = tagFilter.value.trim();
+  if (userFilter.value.trim()) params.user = userFilter.value.trim();
+  if (deviceFilter.value.trim()) params.device = deviceFilter.value.trim();
 
   try {
     currentAgents = await api.agents.list(params);
@@ -48,6 +54,7 @@ function renderList(agents) {
           <span class="card-title">${escapeHtml(a.name)}</span>
           <span class="badge badge-${a.permission}">${a.permission}</span>
         </div>
+        <div class="card-meta">${escapeHtml(a.user)}@${escapeHtml(a.device)}</div>
         <div class="card-content">${escapeHtml(truncate(a.description))}</div>
         <div class="tags" style="margin-top:6px">${renderTags(a.tags)}</div>
       </div>
@@ -169,6 +176,16 @@ function showFormPanel(agent) {
     </div>
     <div class="panel-body">
       <input type="hidden" id="form-id" />
+      <div class="form-row">
+        <div class="form-group">
+          <label for="form-user">User <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="form-user" placeholder="e.g. alice" required />
+        </div>
+        <div class="form-group">
+          <label for="form-device">Device <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="form-device" placeholder="e.g. macbook-pro" required />
+        </div>
+      </div>
       <div class="form-group">
         <label for="form-name">Name</label>
         <input type="text" id="form-name" required placeholder="e.g. Code Reviewer" />
@@ -211,6 +228,8 @@ function showFormPanel(agent) {
 
   if (isEdit) {
     document.getElementById("form-id").value = agent.id;
+    document.getElementById("form-user").value = agent.user || "";
+    document.getElementById("form-device").value = agent.device || "";
     document.getElementById("form-name").value = agent.name;
     document.getElementById("form-description").value = agent.description;
     document.getElementById("form-system-prompt").value = agent.systemPrompt;
@@ -224,6 +243,9 @@ function showFormPanel(agent) {
       );
     }
     document.getElementById("form-tags").value = agent.tags.join(", ");
+  } else {
+    document.getElementById("form-user").value = getDefaultUser();
+    document.getElementById("form-device").value = getDefaultDevice();
   }
 
   panel.querySelectorAll("input, textarea, select").forEach(function (el) {
@@ -310,7 +332,13 @@ async function handleFormSubmit() {
   const nameEl = document.getElementById("form-name");
   const descEl = document.getElementById("form-description");
   const promptEl = document.getElementById("form-system-prompt");
+  const userEl = document.getElementById("form-user");
+  const deviceEl = document.getElementById("form-device");
 
+  if (!userEl.value.trim() || !deviceEl.value.trim()) {
+    alert("User and device are required.");
+    return;
+  }
   if (!nameEl.value.trim() || !descEl.value.trim() || !promptEl.value.trim()) {
     alert("Name, description, and system prompt are required.");
     return;
@@ -333,6 +361,8 @@ async function handleFormSubmit() {
   const model = document.getElementById("form-model").value.trim();
 
   const data = {
+    user: userEl.value.trim(),
+    device: deviceEl.value.trim(),
     name: nameEl.value.trim(),
     description: descEl.value.trim(),
     systemPrompt: promptEl.value,
@@ -382,9 +412,10 @@ const openId = viewId || editId;
 if (openId) {
   api.agents
     .get(openId)
-    .then(function (a) {
+    .then(async function (a) {
       currentAgentId = a.id;
       currentDetailAgent = a;
+      await loadAgents();
       if (editId) {
         showFormPanel(a);
       } else {
@@ -394,8 +425,8 @@ if (openId) {
     .catch(function (err) {
       clientLog.error("agents", "Failed to load agent: " + err.message);
     });
+} else {
+  loadAgents().then(function () {
+    showEmptyPanel();
+  });
 }
-
-loadAgents().then(function () {
-  if (!openId) showEmptyPanel();
-});

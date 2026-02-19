@@ -14,9 +14,11 @@ const router = Router();
 
 // GET /api/agents - list/search agents
 router.get("/", (req, res) => {
-  const { tags, q } = req.query;
+  const { user, device, tags, q } = req.query;
 
   const filters = {
+    user: user as string | undefined,
+    device: device as string | undefined,
     tags: tags ? (tags as string).split(",") : undefined,
   };
 

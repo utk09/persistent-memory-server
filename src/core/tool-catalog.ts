@@ -96,7 +96,36 @@ const agentTools: ToolEntry[] = [
   },
 ];
 
-export const TOOL_CATALOG: ToolEntry[] = [...memoryTools, ...snippetTools, ...agentTools];
+const sessionTools: ToolEntry[] = [
+  {
+    name: "session_list",
+    group: "Session",
+    description:
+      "List all sessions, optionally filtered by user, device, or active status. Sessions are created when MCP HTTP connections open and closed when they disconnect.",
+  },
+  {
+    name: "session_get",
+    group: "Session",
+    description: "Get a session record by its internal ID",
+  },
+];
+
+const settingsTools: ToolEntry[] = [
+  {
+    name: "settings_get",
+    group: "Settings",
+    description:
+      "Get the server settings including the default user and device name configured in the web UI. Call this to discover the user/device identity before creating memories, snippets, or agents.",
+  },
+];
+
+export const TOOL_CATALOG: ToolEntry[] = [
+  ...memoryTools,
+  ...snippetTools,
+  ...agentTools,
+  ...sessionTools,
+  ...settingsTools,
+];
 
 /** Look up a tool description by name. */
 export function getToolDescription(name: string): string {

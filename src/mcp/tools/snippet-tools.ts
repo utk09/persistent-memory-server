@@ -20,6 +20,10 @@ export function registerSnippetTools(server: McpServer): void {
     {
       description: getToolDescription("snippet_create"),
       inputSchema: {
+        user: z.string().describe("Identifier for the user creating this snippet (e.g. 'alice')"),
+        device: z
+          .string()
+          .describe("Identifier for the device/machine (e.g. 'macbook-pro', 'mac1')"),
         title: z.string().describe("Title of the snippet"),
         content: z.string().describe("Content of the snippet"),
         type: snippetTypeEnum.describe("Type: script, snippet, template, reference, or tool"),
@@ -31,7 +35,7 @@ export function registerSnippetTools(server: McpServer): void {
       },
     },
     async (params) => {
-      logger.info("mcp", `snippet_create: ${params.title}`);
+      logger.info("mcp", `snippet_create: ${params.title} (${params.user}@${params.device})`);
       const snippet = createSnippet(params);
       return {
         content: [{ type: "text", text: JSON.stringify(snippet, null, 2) }],
@@ -68,6 +72,8 @@ export function registerSnippetTools(server: McpServer): void {
       description: getToolDescription("snippet_update"),
       inputSchema: {
         id: z.string().describe("Snippet ID to update"),
+        user: z.string().optional().describe("New user identifier"),
+        device: z.string().optional().describe("New device identifier"),
         title: z.string().optional().describe("New title"),
         content: z.string().optional().describe("New content"),
         type: snippetTypeEnum.optional().describe("New type"),
@@ -119,12 +125,17 @@ export function registerSnippetTools(server: McpServer): void {
     {
       description: getToolDescription("snippet_list"),
       inputSchema: {
+        user: z.string().describe("Filter by user (required to scope results to a specific user)"),
+        device: z
+          .string()
+          .optional()
+          .describe("Filter by device (omit to get all devices for the user)"),
         type: snippetTypeEnum.optional().describe("Filter by type"),
         tags: z.array(z.string()).optional().describe("Filter by tags"),
       },
     },
     async (params) => {
-      logger.info("mcp", "snippet_list");
+      logger.info("mcp", `snippet_list (${params.user}@${params.device ?? "*"})`);
       const snippets = listSnippets(params);
       return {
         content: [{ type: "text", text: JSON.stringify(snippets, null, 2) }],
@@ -138,12 +149,20 @@ export function registerSnippetTools(server: McpServer): void {
       description: getToolDescription("snippet_search"),
       inputSchema: {
         query: z.string().describe("Search query"),
+        user: z.string().describe("Filter by user (required to scope results to a specific user)"),
+        device: z
+          .string()
+          .optional()
+          .describe("Filter by device (omit to search all devices for the user)"),
         type: snippetTypeEnum.optional().describe("Filter by type"),
         tags: z.array(z.string()).optional().describe("Filter by tags"),
       },
     },
     async (params) => {
-      logger.info("mcp", `snippet_search: ${params.query}`);
+      logger.info(
+        "mcp",
+        `snippet_search: ${params.query} (${params.user}@${params.device ?? "*"})`,
+      );
       const { query, ...filters } = params;
       const snippets = searchSnippets(query, filters);
       return {

@@ -32,6 +32,8 @@ Opens at [http://localhost:3377](http://localhost:3377). Use `PORT=4000 npm run 
 
 ### MCP Server (for Claude Code)
 
+**Local (stdio — default):**
+
 ```bash
 claude mcp add persistent-memory -- npx jiti /absolute/path/to/persistent-memory-server/src/mcp/server.ts
 
@@ -46,6 +48,32 @@ claude mcp remove persistent-memory
 ```
 
 Then restart Claude Code. The MCP tools will be available automatically.
+
+**Remote / Network (HTTP transport):**
+
+Start the MCP HTTP server on the host machine:
+
+```bash
+npm run start:mcp-http
+# or: MCP_PORT=3388 npx jiti src/mcp/server.ts --http
+```
+
+This starts an HTTP server on port 3388 (configurable via `MCP_PORT`) with two transports:
+
+- **Streamable HTTP** (current spec): `POST /mcp`
+- **SSE** (legacy): `GET /sse` + `POST /messages`
+
+On the remote machine, connect Claude Code:
+
+```bash
+# Streamable HTTP (recommended)
+claude mcp add persistent-memory --transport http http://<host-ip>:3388/mcp
+
+# SSE (legacy fallback)
+claude mcp add persistent-memory --transport sse http://<host-ip>:3388/sse
+```
+
+Replace `<host-ip>` with the network IP shown in the server startup logs.
 
 ## What You Can Do
 
